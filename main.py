@@ -103,7 +103,7 @@ print_M(C)
 
 # ===============================================
 # Block 2: Matrix simplification,
-#          finding the bound of the root vertex
+#          ((finding the bound of the root vertex)) -? or in step 3?
 # ===============================================
 print('=========================')
 
@@ -172,7 +172,7 @@ print_M(C_prime)
 
 # ===============================================
 # Block 5: Branching - finding the bound of
-#          the vertex "(i,j)"
+#          the vertex "(i,j)" (Y = "ij")
 # ===============================================
 print('=========================')
 
@@ -195,3 +195,73 @@ bound_ij = bound_root + sum_subtrahends
 print(f'Bound("(ij)") = {bound_ij}\n')
 print('C\' = ')
 print_M(C_prime)
+
+# ===============================================
+# Block 6: Is the distance matrix small enough?
+# ===============================================
+
+# t.do coment check matrix dims
+if len(C_prime) == len(C_prime[0]) == 2:
+    pass  # TODO goto Block 7
+else:
+    pass  # TODO goto Block 9
+
+# ===============================================
+# Block 7: Exhaustive estimation of Y (ie. "ij")
+# ===============================================
+# ...
+# ===============================================
+# Block 8: if bound(Y) < z_0, z0 = bound(Y),
+#          remember this tour
+# ===============================================
+# ...
+# ===============================================
+# Block 9: Choose the next vertex X
+# ===============================================
+
+# [1]
+# list(S) := Collect all end vertices of current search tree
+# [2]
+# X: bound(X) = min(bound(S))
+# Here we get X = "ij"
+
+# ===============================================
+# Block 10: z_0 <= bound(X) ?
+# ===============================================
+# ...
+# ===============================================
+# Block 11: C Matrix correction for the
+#             current vertex X
+# ===============================================
+print('=========================')
+
+# [1]
+# ar X (="ij") is same as Y (="ij") ? Here - yes
+if True:
+    pass # TODO goto block 3
+         # TODO the current matrix C_prime is the same which we need
+# [2]
+else:
+    pass
+   # todo C_prime := original C
+
+# [3]
+# todo S := [ such (i,j)s such that they are branches to X ]
+
+# [4]
+# g = sum([cost((i,j)) for (i,j) in S])
+
+# [5]
+# todo for (i,j) in S:
+#     todo C_prime.delete_row(i)
+#     todo C_prime.delete_col(j)
+#     todo c_ji = inf
+#     todo for (k,l) in forbidden before X:
+#           c_lk = inf
+
+# [6]
+C_prime, sum_subtrahends = simplify(C_prime)
+
+# [7]
+# todo bound(X) = g + sum_subtrahends
+# todo go to block 3
