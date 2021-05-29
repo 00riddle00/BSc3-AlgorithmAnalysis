@@ -145,6 +145,28 @@ def debug_block_6():
     return is_matrix_simple
 
 
+def debug_block_7():
+    debug_block_name(7)
+    block_7()
+    debug(f'Current tour: {current_tour}')  # todo
+    debug(f'Bound("Y_last") = {Y[1]}\n')  # todo
+
+
+def debug_block_8():
+    debug_block_name(8)
+    old_z_0 = z_0
+    debug(f'z_0 before: {z_0}')
+
+    block_8()
+
+    debug(f'z_0 after: {z_0}')
+
+    if z_0 != old_z_0:
+        debug(f'Better tour has been found: {best_tour}')
+    else:
+        debug(f'We did not find a better tour. Best tour so far: {best_tour}')
+
+
 # ==============================================================
 # Main program blocks
 # ==============================================================
@@ -253,6 +275,32 @@ def block_6():
     return len(C_prime) == 2
 
 
+# ===============================================
+# Block 7: Exhaustive estimation of the remaining matrix
+# ===============================================
+
+def block_7():
+    global current_tour
+    # todo perform tree branching
+    current_tour = [None]  # todo
+    # TODO can there be bound_Y_bar at this point?
+    # bound_Y_last = 0  # todo
+    # Y[1] bound_Y_last # todo
+
+
+# ===============================================
+# Block 8: Is bound_Y_last < z_0? If yes, save the
+#          current tour as the best so far
+# ===============================================
+
+def block_8():
+    global z_0, current_tour, best_tour
+    bound_Y_last = Y[1]
+    if z_0 is None or bound_Y_last < z_0:
+        z_0 = bound_Y_last
+        best_tour = current_tour
+
+
 # ==============================================================
 # Main code
 # ==============================================================
@@ -298,6 +346,7 @@ if __name__ == '__main__':
     max_Dij = None
 
     z_0 = None
+    current_tour = []
     best_tour = []
 
     # ==============================================
@@ -311,6 +360,9 @@ if __name__ == '__main__':
     debug_block_5()
 
     if debug_block_6():
-        pass  # go to block 7
-    else:
-        pass  # go to block 9
+        debug_block_7()
+        debug_block_8()
+
+    # debug_block_9()
+    # debug_block_10()
+    # debug_block_11()
