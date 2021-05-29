@@ -104,15 +104,24 @@ def simplify(M):
 # Functions using program variables
 # =======================================
 
-def print_answer():
+def print_solution():
     global best_tour
-    print('The answer is:')
+    print('=========================')
+    print(f'Solution:')
+    print('=========================\n')
     print(best_tour)
 
 
 # =======================================
 # Functions changing program variables
 # =======================================
+
+def reset_row_col_map():
+    global C_prime, row_map, col_map
+
+    row_map = [i for i in range(1, len(C_prime) + 1)]
+    col_map = [i for i in range(1, len(C_prime) + 1)]
+
 
 def fix_map_on_delete(row_from_map, col_from_map):
     global row_map, col_map
@@ -145,7 +154,7 @@ def debug_block_2():
 def debug_block_3():
     debug_block_name(3)
     block_3()
-    debug(f'Child vertices: Y = ("{Y[0][0]},{Y[0][1]}"), Y_bar = ("{Y_bar[0][0]},{Y_bar[0][1]})_bar"')
+    debug(f'Child vertices: Y = ("{Y[0][0]},{Y[0][1]}"), Y_bar = ("{Y_bar[0][0]},{Y_bar[0][1]}")')
     debug(f'from: i = {i_from}, to: j = {j_to}')
     debug(f'max_Dij = {max_Dij}\n')
 
@@ -153,7 +162,7 @@ def debug_block_3():
 def debug_block_4():
     debug_block_name(4)
     block_4()
-    debug(f'Bound("({i_from},{j_to})_bar") = {Y_bar[1]}\n')
+    debug(f'Bound("({-i_from},{-j_to})") = {Y_bar[1]}\n')
 
 
 def debug_block_5():
@@ -240,8 +249,6 @@ def debug_block_11():
         debug(f'Bound("({i},{j})") = {X[1]}\n')
     else:
         debug('Matrix has been corrected. It is now:')
-        # todo index mapping creation should be repeated here
-        # todo     just like in block 2
         debug_M('C_prime', C_prime)
 
         debug('The bound of X has been updated. It is now:')
@@ -277,8 +284,7 @@ def block_2():
     global C, C_prime, tree, X, row_map, col_map, tree_len
     C_prime = [row[:] for row in C]
 
-    row_map = [i for i in range(1, len(C_prime) + 1)]
-    col_map = [i for i in range(1, len(C_prime) + 1)]
+    reset_row_col_map()
 
     C_prime, bound_root = simplify(C_prime)
     X[1] = bound_root
@@ -318,7 +324,7 @@ def block_3():
                     j_to = col_map[ind(j)]
 
     Y[0] = (i_from, j_to)
-    Y_bar[0] = (i_from, j_to)
+    Y_bar[0] = (-i_from, -j_to)
 
     Y_bar[2] = tree_len
     tree.append(Y_bar)
@@ -356,11 +362,11 @@ def block_5():
         C_prime[row_map.index(j_to)][col_map.index(i_from)] = None
 
     # delete i-th row
-    C_prime = C_prime[:ind(i_from)] + C_prime[ind(i_from) + 1:]
+    C_prime = C_prime[:row_map.index(i_from)] + C_prime[(row_map.index(i_from) + 1):]
 
     # delete j-th column
     C_prime_T = transpose(C_prime)
-    C_prime_T = C_prime_T[:ind(j_to)] + C_prime_T[ind(j_to) + 1:]
+    C_prime_T = C_prime_T[:col_map.index(j_to)] + C_prime_T[(col_map.index(j_to) + 1):]
     C_prime = transpose(C_prime_T)
 
     fix_map_on_delete(i_from, j_to)
@@ -378,6 +384,7 @@ def block_5():
 # check matrix dimensions
 def block_6():
     global C_prime
+    print("LEN=", len(C_prime))
     return len(C_prime) == 2
 
 
@@ -386,10 +393,23 @@ def block_6():
 # ===============================================
 
 def block_7():
-    global current_tour
+    global current_tour, C
+
+    remaining_cost = 0
+    j_to = 0
+
+    if (C_prime[0][0] is None) or \
+            (C_prime[0][1] is not None and C_prime[0][0] > C_prime[0][1]):
+        j_to = 1
+
+    remaining_cost += C[ind(row_map[0])][ind(col_map[j_to])]
+    j_to = (j_to + 1) % 2
+    remaining_cost += C[ind(row_map[1])][ind(col_map[j_to])]
+
     # todo perform tree branching
     current_tour = [None]  # todo
     # TODO can there be bound_Y_bar at this point?
+    # TODO     or can we ever stop on Y_bar?
     # bound_Y_last = 0  # todo
     # Y[1] bound_Y_last # todo
 
@@ -443,16 +463,15 @@ def block_10():
 # ===============================================
 
 def block_11():
-    global X, Y
+    global X, Y, C, C_prime
 
-    # [1]:
-    # Is the next chosen vertex X (="ij") the same as the curent vertex Y (="ij") ?
+    # Is the next chosen vertex X the same as the curent vertex Y?
     if X[0] == Y[0]:
-        return  # C_prime does not change, it's the same that we need
+        # C_prime does not change, it's the same that we need
+        return
 
-    # [2]:
-    # C_prime := C (original)
-    # C_prime = correct(C_prime)
+    C_prime = [row[:] for row in C]
+    reset_row_col_map()
 
     # [3]:
     # S := [ such (i,j)s such that they are branches to X ]
@@ -484,7 +503,7 @@ if __name__ == '__main__':
     # Input
     # ==============================================
 
-    # TODO read from file
+    # TODO read from a file
     # distance (between cities) matrix 'C'
     #         col no.  1    2    3   ...   n
     # row no.
@@ -516,8 +535,8 @@ if __name__ == '__main__':
 
     # [ ('i', 'j'), bound, place in the tree, place in the list of possible vertices]
     X = [(None, None), -1, -1, -1]
-    Y = [(0, 0), -1, -1, -1, -1]
-    Y_bar = [(0, 0), -1, -1, -1]
+    Y = [(0, 0), -1, -1, -1]
+    Y_bar = [(-0, -0), -1, -1, -1]
 
     i_from = None
     j_to = None
@@ -539,8 +558,8 @@ if __name__ == '__main__':
     for i in range(3):
 
         # todo remove this variable reset
-        Y = [(0, 0), -1, -1, -1, -1]
-        Y_bar = [(0, 0), -1, -1, -1]
+        Y = [(0, 0), -1, -1, -1]
+        Y_bar = [(-0, -0), -1, -1, -1]
 
         i_from = None
         j_to = None
@@ -561,4 +580,5 @@ if __name__ == '__main__':
         else:
             break
 
-    print_answer()
+    # TODO print to a file
+    print_solution()
