@@ -117,13 +117,32 @@ def debug_block_3():
     debug_block_name(3)
     block_3()
     debug(f'Child vertices: Y = ("{Y[0][0]},{Y[0][1]}"), Y_bar = ("{Y_bar[0][0]},{Y_bar[0][1]})_bar"')
-    debug(f'max_Dij: {max_Dij}\n')
+    debug(f'from: i = {i_from}, to: j = {j_to}')
+    debug(f'max_Dij = {max_Dij}\n')
 
 
 def debug_block_4():
     debug_block_name(4)
     block_4()
     debug(f'Bound("({i_from},{j_to})_bar") = {Y_bar[1]}\n')
+
+
+def debug_block_5():
+    debug_block_name(5)
+    block_5()
+    debug(f'Bound("({i_from},{j_to})") = {Y[1]}\n')
+    debug_M('C_prime', C_prime)
+
+
+def debug_block_6():
+    debug_block_name(6)
+    is_matrix_simple = block_6()
+    size = len(C_prime)
+    if is_matrix_simple:
+        debug(f'Matrix is simple enough (size = {size}x{size})\n')
+    else:
+        debug(f'Matrix is not simple enough (size = {size}x{size})\n')
+    return is_matrix_simple
 
 
 # ==============================================================
@@ -192,12 +211,46 @@ def block_3():
 
 # ===============================================
 # Block 4: Branching - finding the bound of
-#          the vertex "not(i,j)"
+#          the vertex "(i,j)_bar"
 # ===============================================
 
 def block_4():
     global Y_bar, X, max_Dij
-    Y_bar[1] = X[1] + max_Dij
+    bound_Y_bar = X[1] + max_Dij
+    Y_bar[1] = bound_Y_bar
+
+
+# ===============================================
+# Block 5: Branching - finding the bound of
+#          the vertex "(i,j)"
+# ===============================================
+
+def block_5():
+    global C_prime
+
+    # TODO indices should be queried if they still exist (here they don't)
+
+    # TODO wrap in a function
+    C_prime = C_prime[:ind(i_from)] + C_prime[ind(i_from) + 1:]
+
+    C_prime_T = transpose(C_prime)
+    C_prime_T = C_prime_T[:ind(j_to)] + C_prime_T[ind(j_to) + 1:]
+    C_prime = transpose(C_prime_T)
+
+    C_prime, sum_subtrahends = simplify(C_prime)
+
+    bound_Y = X[1] + sum_subtrahends
+    Y[1] = bound_Y
+
+
+# ===============================================
+# Block 6: Is the distance matrix small enough?
+# ===============================================
+
+# check matrix dimensions
+def block_6():
+    global C_prime
+    return len(C_prime) == 2
 
 
 # ==============================================================
@@ -236,17 +289,16 @@ if __name__ == '__main__':
     Y = [(0, 0), -1]
     Y_bar = [(0, 0), -1]
 
-    # tree = 'tree'
-    # current_root = 'root'
+    current_root = None
     current_vertex = None
     next_vertex = None
-
-    z_0 = None
-    best_tour = None
 
     i_from = None
     j_to = None
     max_Dij = None
+
+    z_0 = None
+    best_tour = []
 
     # ==============================================
     # Main loop
@@ -256,3 +308,9 @@ if __name__ == '__main__':
     debug_block_2()
     debug_block_3()
     debug_block_4()
+    debug_block_5()
+
+    if debug_block_6():
+        pass  # go to block 7
+    else:
+        pass  # go to block 9
