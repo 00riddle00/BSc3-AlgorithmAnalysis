@@ -167,6 +167,28 @@ def debug_block_8():
         debug(f'We did not find a better tour. Best tour so far: {best_tour}')
 
 
+def debug_block_9():
+    debug_block_name(9)
+    block_9()
+    i, j = X[0][0], X[0][1]
+    debug(f'Next vertex: X = ("{i},{j}")')
+    debug(f'Bound("({i},{j})") = {X[1]}\n')
+
+
+def debug_block_10():
+    debug_block_name(10)
+    is_no_better_path = block_10()
+
+    if is_no_better_path:
+        debug('The current chosen vertex does not contain the better tour '
+              'than we already have. The algorithm stops here.\n')
+    else:
+        debug('The current chosen vertex has a lower bound than the current '
+              'best tour. Hence the algorithm proceeds.\n')
+
+    return is_no_better_path
+
+
 # ==============================================================
 # Main program blocks
 # ==============================================================
@@ -301,6 +323,33 @@ def block_8():
         best_tour = current_tour
 
 
+# ===============================================
+# Block 9: Choose the next vertex
+# ===============================================
+
+def block_9():
+    global X, Y
+    # [1]
+    # list(S) := Collect all end vertices of current search tree
+    # [2]
+    # X: bound(X) = min(bound(S))
+    # Here we get X = "ij"
+    X = Y  # todo
+
+
+# ===============================================
+# Block 10: Do we have the best tour already?
+# ===============================================
+
+def block_10():
+    global X, z_0
+    bound_X = X[1]
+    if z_0 is not None and z_0 <= bound_X:
+        return True
+    else:
+        return False
+
+
 # ==============================================================
 # Main code
 # ==============================================================
@@ -363,6 +412,9 @@ if __name__ == '__main__':
         debug_block_7()
         debug_block_8()
 
-    # debug_block_9()
-    # debug_block_10()
-    # debug_block_11()
+    debug_block_9()
+
+    if not debug_block_10():
+        pass  # todo debug_block_11()
+    else:
+        pass  # todo break
