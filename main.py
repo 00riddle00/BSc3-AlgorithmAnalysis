@@ -230,7 +230,8 @@ def debug_block_11():
         debug(f'Bound("({i},{j})") = {X[1]}\n')
     else:
         debug('Matrix has been corrected. It is now:')
-        # todo index mapping should be repeated here
+        # todo index mapping creation should be repeated here
+        # todo     just like in block 2
         debug_M('C_prime', C_prime)
 
         debug('The bound of X has been updated. It is now:')
@@ -263,7 +264,7 @@ def block_1():
 # ===============================================
 
 def block_2():
-    global C, C_prime, tree, X, row_map, col_map
+    global C, C_prime, tree, X, row_map, col_map, tree_len
     C_prime = [row[:] for row in C]
 
     row_map = [i for i in range(1, len(C_prime) + 1)]
@@ -272,6 +273,8 @@ def block_2():
     C_prime, bound_root = simplify(C_prime)
     X[1] = bound_root
     tree.append(X)
+    tree_len = 1
+    X[2] = 0
 
 
 # ===============================================
@@ -279,7 +282,7 @@ def block_2():
 # ===============================================
 
 def block_3():
-    global C_prime, i_from, j_to, max_Dij, Y, Y_bar
+    global C_prime, i_from, j_to, max_Dij, Y, Y_bar, tree_len
 
     # calculate the change of bound for all
     # elements in the matrix whose value is 0
@@ -307,6 +310,14 @@ def block_3():
     Y[0] = (i_from, j_to)
     Y_bar[0] = (i_from, j_to)
 
+    Y_bar[2] = tree_len
+    tree.append(Y_bar)
+    tree_len += 1
+
+    Y[2] = tree_len
+    tree.append(Y)
+    tree_len += 1
+
 
 # ===============================================
 # Block 4: Branching - finding the bound of
@@ -314,9 +325,13 @@ def block_3():
 # ===============================================
 
 def block_4():
-    global Y_bar, X, max_Dij
+    global Y_bar, X, max_Dij, possible_vertices, possible_vertices_len
     bound_Y_bar = X[1] + max_Dij
     Y_bar[1] = bound_Y_bar
+    # we always check Y first, so let's save Y_bar for later
+    Y_bar[3] = possible_vertices_len
+    possible_vertices.append(Y_bar)
+    possible_vertices_len += 1
 
 
 # ===============================================
@@ -387,14 +402,17 @@ def block_8():
 # ===============================================
 
 def block_9():
-    global X, Y
-    # [1]:
-    # list(S) := Collect all end vertices of current search tree
-    #
-    # [2]:
-    # X: bound(X) = min(bound(S))
-    # Here we get X = "ij"
-    X = Y
+    global X, Y, possible_vertices, possible_vertices_len
+
+    for Y_possible in possible_vertices:
+        if Y_possible[1] < Y[1]:
+            possible_vertices.pop(Y_possible[3])
+            Y_possible[3] = -1
+            possible_vertices_len -= 1
+
+            X = Y_possible
+        else:
+            X = Y
 
 
 # ===============================================
@@ -481,10 +499,14 @@ if __name__ == '__main__':
     col_map = []
 
     tree = []
+    tree_len = 0
+    possible_vertices = []
+    possible_vertices_len = 0
 
-    X = [(None, None), -1]
-    Y = [(0, 0), -1]
-    Y_bar = [(0, 0), -1]
+    # [ ('i', 'j'), bound, place in the tree, place in the list of possible vertices]
+    X = [(None, None), -1, -1, -1]
+    Y = [(0, 0), -1, -1, -1, -1]
+    Y_bar = [(0, 0), -1, -1, -1]
 
     i_from = None
     j_to = None
