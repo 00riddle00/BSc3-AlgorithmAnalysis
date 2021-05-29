@@ -101,6 +101,16 @@ def simplify(M):
 
 
 # =======================================
+# Functions using program variables
+# =======================================
+
+def print_answer():
+    global best_tour
+    print('The answer is:')
+    print(best_tour)
+
+
+# =======================================
 # Functions changing program variables
 # =======================================
 
@@ -474,6 +484,7 @@ if __name__ == '__main__':
     # Input
     # ==============================================
 
+    # TODO read from file
     # distance (between cities) matrix 'C'
     #         col no.  1    2    3   ...   n
     # row no.
@@ -528,8 +539,8 @@ if __name__ == '__main__':
     for i in range(3):
 
         # todo remove this variable reset
-        Y = [(0, 0), -1]
-        Y_bar = [(0, 0), -1]
+        Y = [(0, 0), -1, -1, -1, -1]
+        Y_bar = [(0, 0), -1, -1, -1]
 
         i_from = None
         j_to = None
@@ -549,3 +560,5 @@ if __name__ == '__main__':
             debug_block_11()
         else:
             break
+
+    print_answer()
