@@ -30,34 +30,21 @@ def debug_block_name(block_no):
         print('=========================\n')
 
 
-def print_M(matrix_name, M):
-    print(f'{matrix_name} = ')
-    for row in M:
-        print('    ', row)
-    print('\n')
-
-
-# ==============================================================
-# Debug functions for blocks
-# ==============================================================
-
-def debug_block_1(C):
-    debug_block_name(1)
-    C = block_1(C)
-    debug('Input (distance matrix):\n')
-    debug_M('C', C)
-    return C
-
-
 # ===============================================
 # Utility functions
 # ===============================================
-
 
 # convert one-indexed to zero-indexed
 # ind = index
 def ind(index):
     return index - 1
+
+
+def print_M(matrix_name, M):
+    print(f'{matrix_name} = ')
+    for row in M:
+        print('    ', row)
+    print('\n')
 
 
 # find minimum ignoring None values
@@ -109,6 +96,37 @@ def simplify(M):
 
 
 # ==============================================================
+# Debug functions for blocks
+# ==============================================================
+
+def debug_block_1():
+    debug_block_name(1)
+    block_1()
+    debug('Input (distance matrix):\n')
+    debug_M('C', C)
+
+
+def debug_block_2():
+    debug_block_name(2)
+    block_2()
+    debug(f'Bound(Root) = {X[1]}\n')
+    debug_M('C_prime', C_prime)
+
+
+def debug_block_3():
+    debug_block_name(3)
+    block_3()
+    debug(f'Child vertices: Y = ("{Y[0][0]},{Y[0][1]}"), Y_bar = ("{Y_bar[0][0]},{Y_bar[0][1]})_bar"')
+    debug(f'max_Dij: {max_Dij}\n')
+
+
+def debug_block_4():
+    debug_block_name(4)
+    block_4()
+    debug(f'Bound("({i_from},{j_to})_bar") = {Y_bar[1]}\n')
+
+
+# ==============================================================
 # Main program blocks
 # ==============================================================
 
@@ -116,14 +134,70 @@ def simplify(M):
 # Block 1: Input data
 # ===============================================
 
-def block_1(M):
+def block_1():
+    global C
     # convert zeroes to infinity (=None)
     # let x mean a single element in a row
-    M_new = []
-    for row in M:
-        M_new.append([None if x == 0 else x for x in row])
+    C_tmp = []
+    for row in C:
+        C_tmp.append([None if x == 0 else x for x in row])
 
-    return M_new
+    C = C_tmp
+
+
+# ===============================================
+# Block 2: Matrix simplification and finding
+#          the bound of the root vertex
+# ===============================================
+
+def block_2():
+    global C, C_prime, tree, X
+    C_prime = [row[:] for row in C]
+    C_prime, bound_root = simplify(C_prime)
+    X[1] = bound_root
+    tree.append(X)
+
+
+# ===============================================
+# Block 3: Choosing the next vertex "(i,j)" for branching
+# ===============================================
+
+def block_3():
+    global C_prime, i_from, j_to, max_Dij, Y, Y_bar
+    # calculate the change of bound for all
+    # elements in the matrix whose value is 0
+    C_prime_T = transpose(C_prime)
+    max_Dij = 0
+
+    for i, row in enumerate(C_prime, 1):
+        for j, el in enumerate(row, 1):
+            if el == 0:
+                # i-th row and j-th column element is zero
+                # hence there is no path i -> j, meaning there are
+                # such paths 1 -> k and l -> 2 where k != 2 and l != 1.
+                # For every such path their bound will increase by
+                # the size D[i,j] = min(i-th row without j-th element) + min(j-th column without i-th element)
+                D_ij = min_no_element(C_prime[ind(i)], ind(j)) + min_no_element(C_prime_T[ind(j)], ind(i))
+                # TODO change '>=' to '=' and 'LAST' to 'FIRST'
+                # if there are more than one maximum value,
+                # we choose the LAST one encountered as maximum
+                if D_ij >= max_Dij:
+                    max_Dij = D_ij
+                    i_from = i
+                    j_to = j
+
+    Y[0] = (i_from, j_to)
+    Y_bar[0] = (i_from, j_to)
+
+
+# ===============================================
+# Block 4: Branching - finding the bound of
+#          the vertex "not(i,j)"
+# ===============================================
+
+def block_4():
+    global Y_bar, X, max_Dij
+    Y_bar[1] = X[1] + max_Dij
 
 
 # ==============================================================
@@ -154,16 +228,31 @@ if __name__ == '__main__':
     # Setting up variables
     # ==============================================
 
-    tree = 'tree'
-    current_root = 'root'
+    C_prime = None
+
+    tree = []
+
+    X = [(None, None), -1]
+    Y = [(0, 0), -1]
+    Y_bar = [(0, 0), -1]
+
+    # tree = 'tree'
+    # current_root = 'root'
     current_vertex = None
     next_vertex = None
 
     z_0 = None
     best_tour = None
 
+    i_from = None
+    j_to = None
+    max_Dij = None
+
     # ==============================================
     # Main loop
     # ==============================================
 
-    C = debug_block_1(C)
+    debug_block_1()
+    debug_block_2()
+    debug_block_3()
+    debug_block_4()
