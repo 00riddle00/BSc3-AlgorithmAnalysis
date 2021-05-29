@@ -34,6 +34,11 @@ def debug_block_name(block_no):
 # Utility functions
 # ===============================================
 
+# =======================================
+# Functions which do not
+# change program variables
+# =======================================
+
 # convert one-indexed to zero-indexed
 # ind = index
 def ind(index):
@@ -93,6 +98,20 @@ def simplify(M):
     M = transpose(M_T)
 
     return M, sum_subtrahends
+
+
+# =======================================
+# Functions changing program variables
+# =======================================
+
+def fix_map_on_delete(row_from_map, col_from_map):
+    global row_map, col_map
+
+    row_index = row_map.index(row_from_map) + 1
+    row_map.pop(ind(row_index))
+
+    col_index = col_map.index(col_from_map) + 1
+    col_map.pop(ind(col_index))
 
 
 # ==============================================================
@@ -184,11 +203,12 @@ def debug_block_10():
               'than we already have. The algorithm stops here.\n')
     else:
         if not len(best_tour):
-            comment_on_best_tour = ' (which is none so far)'
+            comment_on_best_tour = 'which is none so far'
         else:
-            comment_on_best_tour = ''
-        debug(f'The current chosen vertex has a lower bound than '
-              f'the current best tour{comment_on_best_tour}.')
+            best_tour_bound = '= ?'
+            comment_on_best_tour = f'bound={best_tour_bound}'
+        debug(f'The current chosen vertex has a lower bound (= {X[1]}) than '
+              f'the current best tour ({comment_on_best_tour}).')
         debug('Hence the algorithm proceeds.\n')
 
     return is_no_better_path
@@ -210,6 +230,7 @@ def debug_block_11():
         debug(f'Bound("({i},{j})") = {X[1]}\n')
     else:
         debug('Matrix has been corrected. It is now:')
+        # todo index mapping should be repeated here
         debug_M('C_prime', C_prime)
 
         debug('The bound of X has been updated. It is now:')
@@ -242,8 +263,12 @@ def block_1():
 # ===============================================
 
 def block_2():
-    global C, C_prime, tree, X
+    global C, C_prime, tree, X, row_map, col_map
     C_prime = [row[:] for row in C]
+
+    row_map = [i for i in range(1, len(C_prime) + 1)]
+    col_map = [i for i in range(1, len(C_prime) + 1)]
+
     C_prime, bound_root = simplify(C_prime)
     X[1] = bound_root
     tree.append(X)
@@ -256,13 +281,11 @@ def block_2():
 def block_3():
     global C_prime, i_from, j_to, max_Dij, Y, Y_bar
 
-    print_M("C_primeeeee", C_prime)
     # calculate the change of bound for all
     # elements in the matrix whose value is 0
     C_prime_T = transpose(C_prime)
     max_Dij = 0
 
-    # todo FIX i, j numeration
     for i, row in enumerate(C_prime, 1):
         for j, el in enumerate(row, 1):
             if el == 0:
@@ -275,11 +298,11 @@ def block_3():
                 # TODO change '>=' to '=' and 'LAST' to 'FIRST'
                 # if there are more than one maximum value,
                 # we choose the LAST one encountered as maximum
-                print("DIJ: ", D_ij)
+
                 if D_ij >= max_Dij:
                     max_Dij = D_ij
-                    i_from = i
-                    j_to = j
+                    i_from = row_map[ind(i)]
+                    j_to = col_map[ind(j)]
 
     Y[0] = (i_from, j_to)
     Y_bar[0] = (i_from, j_to)
@@ -302,18 +325,20 @@ def block_4():
 # ===============================================
 
 def block_5():
-    global C_prime, iteration
+    global C_prime
 
-    # TODO indices should be queried if they still exist (here they don't)
-    # TODO also, q->p path should be removed
-    # C_prime[ind(j_to)][ind(i_from)] = None
+    if j_to in row_map and i_from in col_map:
+        C_prime[row_map.index(j_to)][col_map.index(i_from)] = None
 
-    # TODO wrap in a function
+    # delete i-th row
     C_prime = C_prime[:ind(i_from)] + C_prime[ind(i_from) + 1:]
 
+    # delete j-th column
     C_prime_T = transpose(C_prime)
     C_prime_T = C_prime_T[:ind(j_to)] + C_prime_T[ind(j_to) + 1:]
     C_prime = transpose(C_prime_T)
+
+    fix_map_on_delete(i_from, j_to)
 
     C_prime, sum_subtrahends = simplify(C_prime)
 
@@ -452,6 +477,9 @@ if __name__ == '__main__':
 
     C_prime = None
 
+    row_map = []
+    col_map = []
+
     tree = []
 
     X = [(None, None), -1]
@@ -477,6 +505,7 @@ if __name__ == '__main__':
     # while True:
     for i in range(3):
 
+        # todo remove this variable reset
         Y = [(0, 0), -1]
         Y_bar = [(0, 0), -1]
 
