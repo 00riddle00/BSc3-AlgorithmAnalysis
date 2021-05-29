@@ -3,21 +3,55 @@
 # ===============================================
 # Global variables
 # ===============================================
-DEBUG = False
+DEBUG = True
 
 
-# ===============================================
-# Utility functions
-# ===============================================
+# ==============================================================
+# Debug functions
+# ==============================================================
+
 def debug(text):
     global DEBUG
     if DEBUG:
         print(text)
 
 
-def print_M(M):
+def debug_M(matrix_name, M):
+    global DEBUG
+    if DEBUG:
+        print_M(matrix_name, M)
+
+
+def debug_block_name(block_no):
+    global DEBUG
+    if DEBUG:
+        print('=========================')
+        print(f'Block {block_no}')
+        print('=========================\n')
+
+
+def print_M(matrix_name, M):
+    print(f'{matrix_name} = ')
     for row in M:
         print('    ', row)
+    print('\n')
+
+
+# ==============================================================
+# Debug functions for blocks
+# ==============================================================
+
+def debug_block_1(C):
+    debug_block_name(1)
+    C = block_1(C)
+    debug('Input (distance matrix):\n')
+    debug_M('C', C)
+    return C
+
+
+# ===============================================
+# Utility functions
+# ===============================================
 
 
 # convert one-indexed to zero-indexed
@@ -55,10 +89,6 @@ def subtract_min(M):
     return M, subs
 
 
-# ===============================================
-# Main program functions
-# ===============================================
-
 def simplify(M):
     # we collect all the numbers that were
     # subtracted from rows and columns
@@ -78,190 +108,62 @@ def simplify(M):
     return M, sum_subtrahends
 
 
+# ==============================================================
+# Main program blocks
+# ==============================================================
+
 # ===============================================
 # Block 1: Input data
 # ===============================================
-print('=========================')
 
-# distance (between cities) matrix 'C'
-#         col no.  1    2    3   ...   n
-# row no.
-#   1            (a_11 a_12 a_13 ... a_1n)
-#   2            (a_21 a_22 a_23 ... a_2n)
-#   3            (a_31 a_32 a_33 ... a_3n)
-#  ...
-#   n            (an_1 an_2 an_3 ... a_nn)
-#
-C = [[0, 1, 21, 27, 5],
-     [30, 0, 18, 23, 23],
-     [27, 29, 0, 20, 10],
-     [15, 2, 27, 0, 14],
-     [28, 9, 15, 6, 0]]
+def block_1(M):
+    # convert zeroes to infinity (=None)
+    # let x mean a single element in a row
+    M_new = []
+    for row in M:
+        M_new.append([None if x == 0 else x for x in row])
 
-print('C = ')
-print_M(C)
+    return M_new
 
-# ===============================================
-# Block 2: Matrix simplification,
-#          ((finding the bound of the root vertex)) -? or in step 3?
-# ===============================================
-print('=========================')
 
-# convert zeroes to infinity (=None)
-# let x mean a single element in a row
-C_prime = []
-for row in C:
-    C_prime.append([None if x == 0 else x for x in row])
+# ==============================================================
+# Main code
+# ==============================================================
 
-debug(C_prime)
+if __name__ == '__main__':
+    # ==============================================
+    # Input
+    # ==============================================
 
-C_prime, sum_subtrahends = simplify(C_prime)
+    # distance (between cities) matrix 'C'
+    #         col no.  1    2    3   ...   n
+    # row no.
+    #   1            (a_11 a_12 a_13 ... a_1n)
+    #   2            (a_21 a_22 a_23 ... a_2n)
+    #   3            (a_31 a_32 a_33 ... a_3n)
+    #  ...
+    #   n            (an_1 an_2 an_3 ... a_nn)
 
-# get the (lower) bound
-# of the root vertex
-bound_root = sum_subtrahends
+    C = [[0, 1, 21, 27, 5],
+         [30, 0, 18, 23, 23],
+         [27, 29, 0, 20, 10],
+         [15, 2, 27, 0, 14],
+         [28, 9, 15, 6, 0]]
 
-print(f'Bound(Root) = {bound_root}\n')
-print('C\' = ')
-print_M(C_prime)
+    # ==============================================
+    # Setting up variables
+    # ==============================================
 
-# ===============================================
-# Block 3: Choosing the next vertex for branching
-# ===============================================
-print('=========================')
+    tree = 'tree'
+    current_root = 'root'
+    current_vertex = None
+    next_vertex = None
 
-# calculate the change of bound for all
-# elements in the matrix whose value is 0
-C_prime_T = transpose(C_prime)
-max_Dij = 0
-i_from = None
-j_to = None
+    z_0 = None
+    best_tour = None
 
-for i, row in enumerate(C_prime, 1):
-    for j, el in enumerate(row, 1):
-        if el == 0:
-            # i-th row and j-th column element is zero
-            # hence there is no path i -> j, meaning there are
-            # such paths 1 -> k and l -> 2 where k != 2 and l != 1.
-            # For every such path their bound will increase by
-            # the size D[i,j] = min(i-th row without j-th element) + min(j-th column without i-th element)
-            D_ij = min_no_element(C_prime[ind(i)], ind(j)) + min_no_element(C_prime_T[ind(j)], ind(i))
-            # TODO change '>=' to '=' and 'LAST' to 'FIRST'
-            # if there are more than one maximum value,
-            # we choose the LAST one encountered as maximum
-            if D_ij >= max_Dij:
-                max_Dij = D_ij
-                i_from = i
-                j_to = j
-            debug(D_ij)
+    # ==============================================
+    # Main loop
+    # ==============================================
 
-# ===============================================
-# Block 4: Branching - finding the bound of
-#          the vertex "not(i,j)"
-# ===============================================
-debug('=========================')
-debug(i_from)
-debug(j_to)
-debug('=========================')
-
-bound_not_ij = bound_root + max_Dij
-
-print(f'Bound("NOT(ij)") = {bound_not_ij}\n')
-print('C\' = ')
-print_M(C_prime)
-
-# ===============================================
-# Block 5: Branching - finding the bound of
-#          the vertex "(i,j)" (Y = "ij")
-# ===============================================
-print('=========================')
-
-debug(C_prime)
-
-C_prime[ind(j_to)][ind(i_from)] = None
-debug(C_prime)
-
-C_prime = C_prime[:ind(i_from)] + C_prime[ind(i_from) + 1:]
-debug(C_prime)
-
-C_prime_T = transpose(C_prime)
-C_prime_T = C_prime_T[:ind(j_to)] + C_prime_T[ind(j_to) + 1:]
-C_prime = transpose(C_prime_T)
-debug(C_prime)
-
-C_prime, sum_subtrahends = simplify(C_prime)
-bound_ij = bound_root + sum_subtrahends
-
-print(f'Bound("(ij)") = {bound_ij}\n')
-print('C\' = ')
-print_M(C_prime)
-
-# ===============================================
-# Block 6: Is the distance matrix small enough?
-# ===============================================
-
-# t.do coment check matrix dims
-if len(C_prime) == len(C_prime[0]) == 2:
-    pass  # TODO goto Block 7
-else:
-    pass  # TODO goto Block 9
-
-# ===============================================
-# Block 7: Exhaustive estimation of Y (ie. "ij")
-# ===============================================
-# ...
-# ===============================================
-# Block 8: if bound(Y) < z_0, z0 = bound(Y),
-#          remember this tour
-# ===============================================
-# ...
-# ===============================================
-# Block 9: Choose the next vertex X
-# ===============================================
-
-# [1]
-# list(S) := Collect all end vertices of current search tree
-# [2]
-# X: bound(X) = min(bound(S))
-# Here we get X = "ij"
-
-# ===============================================
-# Block 10: z_0 <= bound(X) ?
-# ===============================================
-# ...
-# ===============================================
-# Block 11: C Matrix correction for the
-#             current vertex X
-# ===============================================
-print('=========================')
-
-# [1]
-# ar X (="ij") is same as Y (="ij") ? Here - yes
-if True:
-    pass # TODO goto block 3
-         # TODO the current matrix C_prime is the same which we need
-# [2]
-else:
-    pass
-   # todo C_prime := original C
-
-# [3]
-# todo S := [ such (i,j)s such that they are branches to X ]
-
-# [4]
-# g = sum([cost((i,j)) for (i,j) in S])
-
-# [5]
-# todo for (i,j) in S:
-#     todo C_prime.delete_row(i)
-#     todo C_prime.delete_col(j)
-#     todo c_ji = inf
-#     todo for (k,l) in forbidden before X:
-#           c_lk = inf
-
-# [6]
-C_prime, sum_subtrahends = simplify(C_prime)
-
-# [7]
-# todo bound(X) = g + sum_subtrahends
-# todo go to block 3
+    C = debug_block_1(C)
