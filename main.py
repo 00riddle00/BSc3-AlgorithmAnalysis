@@ -183,10 +183,38 @@ def debug_block_10():
         debug('The current chosen vertex does not contain the better tour '
               'than we already have. The algorithm stops here.\n')
     else:
-        debug('The current chosen vertex has a lower bound than the current '
-              'best tour. Hence the algorithm proceeds.\n')
+        if not len(best_tour):
+            comment_on_best_tour = ' (which is none so far)'
+        else:
+            comment_on_best_tour = ''
+        debug(f'The current chosen vertex has a lower bound than '
+              f'the current best tour{comment_on_best_tour}.')
+        debug('Hence the algorithm proceeds.\n')
 
     return is_no_better_path
+
+
+def debug_block_11():
+    debug_block_name(11)
+    bound_of_X = X[1]
+    old_bound_of_X = bound_of_X
+
+    block_11()
+
+    bound_of_X = X[1]
+
+    if old_bound_of_X == bound_of_X:
+        debug('Same vertex is picked as X.')
+        debug('The bound of X is:')
+        i, j = X[0][0], X[0][1]
+        debug(f'Bound("({i},{j})") = {X[1]}\n')
+    else:
+        debug('Matrix has been corrected. It is now:')
+        debug_M('C_prime', C_prime)
+
+        debug('The bound of X has been updated. It is now:')
+        i, j = X[0][0], X[0][1]
+        debug(f'Bound("({i},{j})") = {X[1]}\n')
 
 
 # ==============================================================
@@ -227,11 +255,14 @@ def block_2():
 
 def block_3():
     global C_prime, i_from, j_to, max_Dij, Y, Y_bar
+
+    print_M("C_primeeeee", C_prime)
     # calculate the change of bound for all
     # elements in the matrix whose value is 0
     C_prime_T = transpose(C_prime)
     max_Dij = 0
 
+    # todo FIX i, j numeration
     for i, row in enumerate(C_prime, 1):
         for j, el in enumerate(row, 1):
             if el == 0:
@@ -244,6 +275,7 @@ def block_3():
                 # TODO change '>=' to '=' and 'LAST' to 'FIRST'
                 # if there are more than one maximum value,
                 # we choose the LAST one encountered as maximum
+                print("DIJ: ", D_ij)
                 if D_ij >= max_Dij:
                     max_Dij = D_ij
                     i_from = i
@@ -270,9 +302,11 @@ def block_4():
 # ===============================================
 
 def block_5():
-    global C_prime
+    global C_prime, iteration
 
     # TODO indices should be queried if they still exist (here they don't)
+    # TODO also, q->p path should be removed
+    # C_prime[ind(j_to)][ind(i_from)] = None
 
     # TODO wrap in a function
     C_prime = C_prime[:ind(i_from)] + C_prime[ind(i_from) + 1:]
@@ -329,12 +363,13 @@ def block_8():
 
 def block_9():
     global X, Y
-    # [1]
+    # [1]:
     # list(S) := Collect all end vertices of current search tree
-    # [2]
+    #
+    # [2]:
     # X: bound(X) = min(bound(S))
     # Here we get X = "ij"
-    X = Y  # todo
+    X = Y
 
 
 # ===============================================
@@ -348,6 +383,43 @@ def block_10():
         return True
     else:
         return False
+
+
+# ===============================================
+# Block 11: Correct matrix for current vertex X
+# ===============================================
+
+def block_11():
+    global X, Y
+
+    # [1]:
+    # Is the next chosen vertex X (="ij") the same as the curent vertex Y (="ij") ?
+    if X[0] == Y[0]:
+        return  # C_prime does not change, it's the same that we need
+
+    # [2]:
+    # C_prime := C (original)
+    # C_prime = correct(C_prime)
+
+    # [3]:
+    # S := [ such (i,j)s such that they are branches to X ]
+
+    # [4]
+    # g = sum([cost((i,j)) for (i,j) in S])
+
+    # [5]
+    # for (i,j) in S:
+    #     C_prime.delete_row(i)
+    #     C_prime.delete_col(j)
+    #     c_ji = inf
+    #     for (k,l) in forbidden before X:
+    #         c_lk = inf
+
+    # [6]
+    # C_prime, sum_subtrahends = simplify(C_prime)
+
+    # [7]
+    # bound(X) = g + sum_subtrahends
 
 
 # ==============================================================
@@ -386,10 +458,6 @@ if __name__ == '__main__':
     Y = [(0, 0), -1]
     Y_bar = [(0, 0), -1]
 
-    current_root = None
-    current_vertex = None
-    next_vertex = None
-
     i_from = None
     j_to = None
     max_Dij = None
@@ -404,17 +472,29 @@ if __name__ == '__main__':
 
     debug_block_1()
     debug_block_2()
-    debug_block_3()
-    debug_block_4()
-    debug_block_5()
 
-    if debug_block_6():
-        debug_block_7()
-        debug_block_8()
+    # todo add check: iter_max
+    # while True:
+    for i in range(3):
 
-    debug_block_9()
+        Y = [(0, 0), -1]
+        Y_bar = [(0, 0), -1]
 
-    if not debug_block_10():
-        pass  # todo debug_block_11()
-    else:
-        pass  # todo break
+        i_from = None
+        j_to = None
+        max_Dij = None
+
+        debug_block_3()
+        debug_block_4()
+        debug_block_5()
+
+        if debug_block_6():
+            debug_block_7()
+            debug_block_8()
+
+        debug_block_9()
+
+        if not debug_block_10():
+            debug_block_11()
+        else:
+            break
