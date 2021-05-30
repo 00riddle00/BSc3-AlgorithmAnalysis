@@ -23,10 +23,10 @@ def debug_M(matrix_name, M):
 
 
 def debug_block_name(block_no):
-    global DEBUG
+    global DEBUG, iteration
     if DEBUG:
         print('=========================')
-        print(f'Block {block_no}')
+        print(f'Block {block_no} (iteration {iteration})')
         print('=========================\n')
 
 
@@ -182,7 +182,7 @@ def debug_block_2():
 def debug_block_3():
     debug_block_name(3)
     block_3()
-    debug(f'Child vertices: Y = ("{Y[0][0]},{Y[0][1]}"), Y_bar = ("{Y_bar[0][0]},{Y_bar[0][1]}")')
+    debug(f'Child vertices: Y_bar = ("{Y_bar[0][0]},{Y_bar[0][1]}"), Y = ("{Y[0][0]},{Y[0][1]}")')
     debug(f'from: i = {i_from}, to: j = {j_to}')
     debug(f'max_Dij = {max_Dij}\n')
 
@@ -228,9 +228,9 @@ def debug_block_8():
     debug(f'z_0 after: {z_0}')
 
     if z_0 != old_z_0:
-        debug(f'Better tour has been found: {best_tour}')
+        debug(f'Better tour has been found: {best_tour}\n')
     else:
-        debug(f'We did not find a better tour. Best tour so far: {best_tour}')
+        debug(f'We did not find a better tour. Best tour so far: {best_tour}\n')
 
 
 def debug_block_9():
@@ -271,7 +271,9 @@ def debug_block_11():
     bound_of_X = X[1]
 
     if old_bound_of_X == bound_of_X:
-        debug('Same vertex is picked as X.')
+        debug('Same vertex has been picked as it was before,'
+              ' the matrix C_prime does not change.\n')
+        debug_M('C_prime', C_prime)
         debug('The bound of X is:')
         i, j = X[0][0], X[0][1]
         debug(f'Bound("({i},{j})") = {X[1]}\n')
@@ -347,11 +349,13 @@ def block_3():
                 # For every such path their bound will increase by
                 # the size D[i,j] = min(i-th row without j-th element) + min(j-th column without i-th element)
                 D_ij = min_no_element(C_prime[ind(i)], ind(j)) + min_no_element(C_prime_T[ind(j)], ind(i))
-                # TODO change '>=' to '=' and 'LAST' to 'FIRST'
+                # TODO change '>=' to '>' and 'LAST' to 'FIRST'
                 # if there are more than one maximum value,
                 # we choose the LAST one encountered as maximum
 
-                if D_ij >= max_Dij:
+                # todo choose one of them
+                # if D_ij >= max_Dij:
+                if D_ij > max_Dij:
                     max_Dij = D_ij
                     i_from = row_map[ind(i)]
                     j_to = col_map[ind(j)]
@@ -450,7 +454,6 @@ def block_7():
     start_el = 1
     while paths:
         for i, path in enumerate(paths):
-            print(path)
             if path[0] == start_el:
                 cost += C[ind(path[0])][ind(path[1])]
                 current_tour.append(start_el)
@@ -591,11 +594,17 @@ if __name__ == '__main__':
     #  ...
     #   n            (an_1 an_2 an_3 ... a_nn)
 
-    C = [[0, 1, 21, 27, 5],
-         [30, 0, 18, 23, 23],
-         [27, 29, 0, 20, 10],
-         [15, 2, 27, 0, 14],
-         [28, 9, 15, 6, 0]]
+    # C = [[0, 1, 21, 27, 5],
+    #      [30, 0, 18, 23, 23],
+    #      [27, 29, 0, 20, 10],
+    #      [15, 2, 27, 0, 14],
+    #      [28, 9, 15, 6, 0]]
+
+    C = [[0, 25, 40, 31, 27],
+         [5, 0, 17, 30, 25],
+         [19, 15, 0, 6, 1],
+         [9, 50, 24, 0, 6],
+         [22, 8, 7, 10, 0]]
 
     # ==============================================
     # Setting up variables
@@ -629,6 +638,8 @@ if __name__ == '__main__':
     # Main loop
     # ==============================================
 
+    iteration = 1
+
     debug_block_1()
     debug_block_2()
 
@@ -648,6 +659,8 @@ if __name__ == '__main__':
             debug_block_11()
         else:
             break
+
+        iteration += 1
 
     # TODO print to a file
     print_solution()
