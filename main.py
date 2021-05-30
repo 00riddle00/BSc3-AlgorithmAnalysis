@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import time
 
 # ===============================================
 # Global variables
@@ -109,6 +110,13 @@ def simplify(M):
 # Functions using program variables
 # =======================================
 
+def print_cities():
+    global best_tour, cities
+    for v in best_tour:
+        print(f'{cities[v]} ->', end=' ')
+    print(f'{cities[best_tour[0]]}\n')
+
+
 def print_solution():
     global best_tour
     print('=========================')
@@ -117,7 +125,7 @@ def print_solution():
     for v in best_tour:
         print(f'{v} ->', end=' ')
     print(best_tour[0])
-    print(f'\nCost = {best_cost}')
+    print(f'\nCost = {best_cost}\n')
 
 
 # =======================================
@@ -645,6 +653,29 @@ if __name__ == '__main__':
         [254, 161, 281, 250, 291, 205, 193, 401, 267, 335, 170, 97, 388, 249, 385, 68, 237, 284, 152, 0]
     ]
 
+    cities = {
+        1: 'Alytus',
+        2: 'Biržai',
+        3: 'Druskininkai',
+        4: 'Joniškis',
+        5: 'Jurbarkas',
+        6: 'Kaunas',
+        7: 'Kėdainiai',
+        8: 'Klaipėda',
+        9: 'Marijampolė',
+        10: 'Mažeikiai',
+        11: 'Panevėžys',
+        12: 'Rokiškis',
+        13: 'Skuodas',
+        14: 'Šiauliai',
+        15: 'Šilutė',
+        16: 'Švenčionys',
+        17: 'Varėna',
+        18: 'Vilkaviškis',
+        19: 'Vilnius',
+        20: 'Visaginas'
+    }
+
     # ==============================================
     # Setting up variables
     # ==============================================
@@ -685,6 +716,8 @@ if __name__ == '__main__':
     # ==============================================
     # Main loop
     # ==============================================
+
+    start_time = time.time()
 
     if DEBUG:
         debug_block_1()
@@ -731,3 +764,7 @@ if __name__ == '__main__':
             iterations += 1
 
     print_solution()
+    print_cities()
+
+    end_time = time.time()
+    print("--- %s seconds ---" % (end_time - start_time))
