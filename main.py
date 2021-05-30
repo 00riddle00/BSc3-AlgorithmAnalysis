@@ -3,7 +3,12 @@
 # ===============================================
 # Global variables
 # ===============================================
-DEBUG = True
+global DEBUG, \
+    C_prime, row_map, col_map, i_from, j_to, max_Dij, \
+    X, Y, Y_bar, candidate_nodes, z_0, current_tour, best_tour, best_cost, \
+    iterations
+
+DEBUG = False
 
 
 # ==============================================================
@@ -23,10 +28,10 @@ def debug_M(matrix_name, M):
 
 
 def debug_block_name(block_no):
-    global DEBUG, iteration
+    global DEBUG, iterations
     if DEBUG:
         print('=========================')
-        print(f'Block {block_no} (iteration {iteration})')
+        print(f'Block {block_no} (iteration {iterations})')
         print('=========================\n')
 
 
@@ -162,7 +167,7 @@ def disable_path(i_row, j_col):
 
 
 # ==============================================================
-# Debug functions for blocks
+# Functions for blocks with debug possibility
 # ==============================================================
 
 def debug_block_1():
@@ -175,14 +180,14 @@ def debug_block_1():
 def debug_block_2():
     debug_block_name(2)
     block_2()
-    debug(f'Bound(Root) = {X[1]}\n')
+    debug(f'Bound(Root) = {X.bound}\n')
     debug_M('C_prime', C_prime)
 
 
 def debug_block_3():
     debug_block_name(3)
     block_3()
-    debug(f'Child vertices: Y_bar = ("{Y_bar[0][0]},{Y_bar[0][1]}"), Y = ("{Y[0][0]},{Y[0][1]}")')
+    debug(f'Child vertices: Y_bar = ("{Y_bar.path[0]},{Y_bar.path[0]}"), Y = ("{Y.path[0]},{Y.path[0]}")')
     debug(f'from: i = {i_from}, to: j = {j_to}')
     debug(f'max_Dij = {max_Dij}\n')
 
@@ -190,13 +195,13 @@ def debug_block_3():
 def debug_block_4():
     debug_block_name(4)
     block_4()
-    debug(f'Bound("({-i_from},{-j_to})") = {Y_bar[1]}\n')
+    debug(f'Bound("({-i_from},{-j_to})") = {Y_bar.bound}\n')
 
 
 def debug_block_5():
     debug_block_name(5)
     block_5()
-    debug(f'Bound("({i_from},{j_to})") = {Y[1]}\n')
+    debug(f'Bound("({i_from},{j_to})") = {Y.bound}\n')
     debug_M('C_prime', C_prime)
 
 
@@ -214,18 +219,15 @@ def debug_block_6():
 def debug_block_7():
     debug_block_name(7)
     block_7()
-    debug(f'Current tour: {current_tour}')  # todo
-    debug(f'Bound("Y_last") = {Y[1]}\n')  # todo
+    debug(f'Current tour: {current_tour}')
+    debug(f'Bound("Y_last") = {Y.bound}\n')
 
 
 def debug_block_8():
     debug_block_name(8)
     old_z_0 = z_0
-    debug(f'z_0 before: {z_0}')
 
     block_8()
-
-    debug(f'z_0 after: {z_0}')
 
     if z_0 != old_z_0:
         debug(f'Better tour has been found: {best_tour}\n')
@@ -236,9 +238,9 @@ def debug_block_8():
 def debug_block_9():
     debug_block_name(9)
     block_9()
-    i, j = X[0][0], X[0][1]
+    i, j = X.path[0], X.path[1]
     debug(f'Next vertex: X = ("{i},{j}")')
-    debug(f'Bound("({i},{j})") = {X[1]}\n')
+    debug(f'Bound("({i},{j})") = {X.bound}\n')
 
 
 def debug_block_10():
@@ -253,7 +255,7 @@ def debug_block_10():
         if len(best_tour):
             best_tour_bound = f'{best_cost}'
 
-        debug(f'The current chosen vertex has a lower bound (= {X[1]}) than '
+        debug(f'The current chosen vertex has a lower bound (= {X.bound}) than '
               f'the current best tour (bound = {best_tour_bound}).')
         debug('Hence the algorithm proceeds.\n')
 
@@ -269,15 +271,51 @@ def debug_block_11():
               ' the matrix C_prime does not change.\n')
         debug_M('C_prime', C_prime)
         debug('The bound of X is:')
-        i, j = X[0][0], X[0][1]
-        debug(f'Bound("({i},{j})") = {X[1]}\n')
+        i, j = X.path[0], X.path[1]
+        debug(f'Bound("({i},{j})") = {X.bound}\n')
     else:
         debug('Matrix has been corrected. It is now:\n')
         debug_M('C_prime', C_prime)
 
         debug('The bound of X has been updated. It is now:')
-        i, j = X[0][0], X[0][1]
-        debug(f'Bound("({i},{j})") = {X[1]}\n')
+        i, j = X.path[0], X.path[1]
+        debug(f'Bound("({i},{j})") = {X.bound}\n')
+
+
+# ==============================================================
+# Solution tree imlementation
+# ==============================================================
+
+class Node:
+
+    def __init__(self, parent, path, bound=None):
+        self.parent = parent
+        self.path = path
+        self.left_child = None
+        self.right_child = None
+        self.bound = bound
+
+
+class CandidateNodes:
+    nodelist = []
+    size = 0
+
+    def add(self, node):
+        for i in range(self.size):
+            if node.bound <= self.nodelist[i].bound:
+                self.nodelist.insert(i, node)
+                self.size += 1
+                return
+
+        self.nodelist.append(node)
+        self.size += 1
+
+    def get(self):
+        return self.nodelist[0]
+
+    def pop(self):
+        self.nodelist = self.nodelist[1:]
+        self.size -= 1
 
 
 # ==============================================================
@@ -305,14 +343,11 @@ def block_1():
 # ===============================================
 
 def block_2():
-    global C, C_prime, tree, X, row_map, col_map, tree_len
+    global X, C, C_prime, row_map, col_map
 
     reset_C_prime()
     C_prime, bound_root = simplify(C_prime)
-    X[1] = bound_root
-    tree.append(X)
-    tree_len = 1
-    X[2] = 0
+    X = Node(None, (None, None), bound=bound_root)
 
 
 # ===============================================
@@ -320,11 +355,12 @@ def block_2():
 # ===============================================
 
 def block_3():
-    global C_prime, i_from, j_to, max_Dij, Y, Y_bar, tree_len
+    global Y, Y_bar, C_prime, i_from, j_to, max_Dij
 
     # reset these variables
-    Y = [(0, 0), -1, -1, -1]
-    Y_bar = [(-0, -0), -1, -1, -1]
+    Y = [(0, 0), None, None, None, False]
+    Y_bar = [(-0, -0), None, None, None, False]
+
     i_from = None
     j_to = None
     max_Dij = None
@@ -343,27 +379,19 @@ def block_3():
                 # For every such path their bound will increase by
                 # the size D[i,j] = min(i-th row without j-th element) + min(j-th column without i-th element)
                 D_ij = min_no_element(C_prime[ind(i)], ind(j)) + min_no_element(C_prime_T[ind(j)], ind(i))
-                # TODO change '>=' to '>' and 'LAST' to 'FIRST'
                 # if there are more than one maximum value,
-                # we choose the LAST one encountered as maximum
+                # we choose the first one encountered as maximum
 
-                # todo choose one of them
-                # if D_ij >= max_Dij:
                 if D_ij > max_Dij:
                     max_Dij = D_ij
                     i_from = row_map[ind(i)]
                     j_to = col_map[ind(j)]
 
-    Y[0] = (i_from, j_to)
-    Y_bar[0] = (-i_from, -j_to)
+    Y_bar = Node(X, (-i_from, -j_to))
+    Y = Node(X, (i_from, j_to))
 
-    Y_bar[2] = tree_len
-    tree.append(Y_bar)
-    tree_len += 1
-
-    Y[2] = tree_len
-    tree.append(Y)
-    tree_len += 1
+    X.left_child = Y_bar
+    X.right_child = Y
 
 
 # ===============================================
@@ -372,13 +400,10 @@ def block_3():
 # ===============================================
 
 def block_4():
-    global Y_bar, X, max_Dij, possible_vertices, possible_vertices_len
-    bound_Y_bar = X[1] + max_Dij
-    Y_bar[1] = bound_Y_bar
+    global max_Dij, candidate_nodes
+    Y_bar.bound = X.bound + max_Dij
     # we always check Y first, so let's save Y_bar for later
-    Y_bar[3] = possible_vertices_len  # todo delete unused
-    possible_vertices.append(Y_bar)
-    possible_vertices_len += 1
+    candidate_nodes.add(Y_bar)
 
 
 # ===============================================
@@ -387,14 +412,16 @@ def block_4():
 # ===============================================
 
 def block_5():
-    global C_prime
+    global X, Y, C_prime
 
     delete_row_col(i_from, j_to)
     disable_path(j_to, i_from)
     C_prime, sum_subtrahends = simplify(C_prime)
 
-    bound_Y = X[1] + sum_subtrahends
-    Y[1] = bound_Y
+    Y.bound = X.bound + sum_subtrahends
+
+    # reset X
+    X = None
 
 
 # ===============================================
@@ -434,26 +461,18 @@ def block_7():
     i_from = row_map[row_from]
     j_to = col_map[col_to]
 
-    paths.append([i_from, j_to])
+    paths.insert(0, [i_from, j_to])
 
-    # todo save some of this state for block 11?
     # traversing the tree
     node = Y
 
-    while True:
-        node_index = node[2]
-        is_bar_vertex = node[0][0] < 0
-        parent_index = node_index - 1
+    while node.parent is not None:
+        is_bar_vertex = node.path[0] < 0
 
         if not is_bar_vertex:
-            parent_index -= 1
-            paths.append([node[0][0], node[0][1]])
+            paths.append([node.path[0], node.path[1]])
 
-        if parent_index != 0:
-            parent = tree[parent_index]
-            node = parent
-        else:
-            break
+        node = node.parent
 
     current_tour = []
     cost = 0
@@ -467,9 +486,7 @@ def block_7():
                 start_el = path[1]
                 paths.pop(i)
 
-    # todo can there be bound_Y_bar at this point?
-    #      or can we ever stop on Y_bar?
-    Y[1] = cost
+    Y.bound = cost
 
 
 # ===============================================
@@ -479,7 +496,7 @@ def block_7():
 
 def block_8():
     global z_0, current_tour, best_tour, best_cost
-    cost = Y[1]
+    cost = Y.bound
     if z_0 is None or cost < z_0:
         z_0 = cost
         best_tour = current_tour
@@ -491,21 +508,16 @@ def block_8():
 # ===============================================
 
 def block_9():
-    global X, Y, tree, possible_vertices, possible_vertices_len, tree_len
+    global X, Y, C_prime, candidate_nodes
 
-    for i, Y_possible in enumerate(possible_vertices[::-1], 1):
-        if Y_possible[1] < Y[1]:
-            possible_vertices = possible_vertices[:-i]
-            vertex_index_in_tree = Y_possible[2]
-            tree_len = vertex_index_in_tree + 1
-            tree = tree[:tree_len]
-            for j in range(tree_len):
-                tree[j][2] = j
+    X = Y
 
-            X = Y_possible
-            break
-        else:
-            X = Y
+    candidate_node = candidate_nodes.get()
+    if Y.bound > candidate_node.bound:
+        candidate_nodes.pop()
+        X = candidate_node
+        if len(C_prime) > 2:
+            candidate_nodes.add(Y)
 
 
 # ===============================================
@@ -513,9 +525,8 @@ def block_9():
 # ===============================================
 
 def block_10():
-    global X, z_0
-    bound_X = X[1]
-    if z_0 is not None and z_0 <= bound_X:
+    global z_0
+    if z_0 is not None and z_0 <= X.bound:
         return True
     else:
         return False
@@ -526,37 +537,27 @@ def block_10():
 # ===============================================
 
 def block_11():
-    global X, Y, C, C_prime, tree, tree_len, possible_vertices, possible_vertices_len
+    global C, C_prime
 
     # Is the next chosen vertex X the same as the curent vertex Y?
-    # fixme
-    if X[0] == Y[0]:
+    if X == Y:
         # C_prime does not change, it's the same that we need
         return True
 
     # traversing the tree
-    node = X
-    parent_nodes = []  # todo is it needed here?
     included_paths = []
     excluded_paths = []
+    node = X
 
-    while True:
-        node_index = node[2]
-        is_bar_vertex = node[0][0] < 0
-        parent_index = node_index - 1
+    while node.parent is not None:
+        is_bar_vertex = node.path[0] < 0
 
         if is_bar_vertex:
-            excluded_paths.append(node[0])
+            excluded_paths.append(node.path)
         else:
-            parent_index -= 1
-            included_paths.append(node[0])
+            included_paths.append(node.path)
 
-        if parent_index != 0:
-            parent = tree[parent_index]
-            parent_nodes.append(parent)
-            node = parent
-        else:
-            break
+        node = node.parent
 
     reset_C_prime()
 
@@ -571,7 +572,6 @@ def block_11():
         i_from = path[0]
         j_to = path[1]
 
-        # todo should we count excluded paths here as well?
         cost_included_paths += C[ind(i_from)][ind(j_to)]
 
         delete_row_col(i_from, j_to)
@@ -580,10 +580,7 @@ def block_11():
     C_prime, sum_subtrahends = simplify(C_prime)
 
     # adjust bound(X) value
-    X[1] = cost_included_paths + sum_subtrahends
-
-    # todo adjust the tree (?)
-    # (...)
+    X.bound = cost_included_paths + sum_subtrahends
 
     return False
 
@@ -597,7 +594,6 @@ if __name__ == '__main__':
     # Input
     # ==============================================
 
-    # TODO read from a file
     # distance (between cities) matrix 'C'
     #         col no.  1    2    3   ...   n
     # row no.
@@ -607,75 +603,131 @@ if __name__ == '__main__':
     #  ...
     #   n            (an_1 an_2 an_3 ... a_nn)
 
-    # C = [[0, 1, 21, 27, 5],
-    #      [30, 0, 18, 23, 23],
-    #      [27, 29, 0, 20, 10],
-    #      [15, 2, 27, 0, 14],
-    #      [28, 9, 15, 6, 0]]
+    # From the lecture exercises
+    # 1 -> 2 -> 3 -> 5 -> 4 -> 1
+    # Cost = 50
+    C = [[0, 1, 21, 27, 5],
+         [30, 0, 18, 23, 23],
+         [27, 29, 0, 20, 10],
+         [15, 2, 27, 0, 14],
+         [28, 9, 15, 6, 0]]
 
+    # From the book "Гудман С., Хидетниеми С. -
+    # Введение в разработку и анализ алгоритмов", pp. 130
+    # 1 -> 2 -> 3 -> 5 -> 4 -> 1
+    # Cost = 62
     C = [[0, 25, 40, 31, 27],
          [5, 0, 17, 30, 25],
          [19, 15, 0, 6, 1],
          [9, 50, 24, 0, 6],
          [22, 8, 7, 10, 0]]
 
+    C = [
+        [0, 243, 57, 248, 144, 66, 120, 281, 61, 294, 171, 238, 307, 211, 242, 186, 49, 84, 101, 254],
+        [243, 0, 296, 94, 208, 178, 125, 261, 234, 183, 66, 64, 236, 101, 265, 174, 287, 250, 202, 161],
+        [57, 296, 0, 300, 171, 119, 172, 320, 88, 343, 224, 288, 349, 264, 269, 213, 58, 111, 128, 281],
+        [248, 94, 300, 0, 161, 182, 134, 196, 238, 98, 97, 158, 151, 39, 200, 243, 297, 234, 231, 250],
+        [144, 208, 171, 161, 0, 86, 114, 149, 83, 172, 158, 246, 178, 118, 98, 261, 193, 72, 186, 291],
+        [66, 178, 119, 182, 86, 0, 54, 215, 56, 228, 106, 171, 241, 146, 184, 175, 115, 73, 101, 205],
+        [120, 125, 172, 134, 114, 54, 0, 208, 110, 183, 59, 147, 234, 97, 193, 162, 168, 127, 130, 193],
+        [281, 261, 320, 196, 149, 215, 208, 0, 233, 120, 239, 325, 75, 159, 53, 370, 329, 222, 310, 401],
+        [61, 234, 88, 238, 83, 56, 110, 233, 0, 255, 162, 232, 262, 201, 181, 222, 110, 23, 137, 267],
+        [294, 183, 343, 98, 172, 228, 183, 120, 255, 0, 165, 247, 55, 80, 153, 327, 342, 244, 299, 335],
+        [171, 66, 224, 97, 158, 106, 59, 239, 162, 165, 0, 88, 219, 79, 224, 162, 220, 178, 136, 170],
+        [238, 64, 288, 158, 246, 171, 147, 325, 232, 247, 88, 0, 300, 165, 312, 130, 243, 249, 159, 97],
+        [307, 236, 349, 151, 178, 241, 234, 75, 262, 55, 219, 300, 0, 134, 124, 381, 355, 251, 336, 388],
+        [211, 101, 264, 39, 118, 146, 97, 159, 201, 80, 79, 165, 134, 0, 157, 241, 260, 190, 213, 249],
+        [242, 265, 269, 200, 98, 184, 193, 53, 181, 153, 224, 312, 124, 157, 0, 355, 291, 170, 284, 385],
+        [186, 174, 213, 243, 261, 175, 162, 370, 222, 327, 162, 130, 381, 241, 355, 0, 169, 245, 85, 68],
+        [49, 287, 58, 297, 193, 115, 168, 329, 110, 342, 220, 243, 355, 260, 291, 169, 0, 133, 84, 237],
+        [84, 250, 111, 234, 72, 73, 127, 222, 23, 244, 178, 249, 251, 190, 170, 245, 133, 0, 161, 284],
+        [101, 202, 128, 231, 186, 101, 130, 310, 137, 299, 136, 159, 336, 213, 284, 85, 84, 161, 0, 152],
+        [254, 161, 281, 250, 291, 205, 193, 401, 267, 335, 170, 97, 388, 249, 385, 68, 237, 284, 152, 0]
+    ]
+
     # ==============================================
     # Setting up variables
     # ==============================================
 
+    # ================================
+    # Matrix related
+    # ================================
     C_prime = None
 
     row_map = []
     col_map = []
 
-    tree = []
-    tree_len = 0  # todo delete this redundant variable
-    possible_vertices = []  # todo save only tree index here
-    possible_vertices_len = 0  # todo this redundant delete
-
-    # [ ('i', 'j'), bound, place in the tree, place in the list of possible vertices]
-    # todo delete redundant last parameter
-    # todo do we need "place in the tree" index?
-    X = [(None, None), -1, -1, -1]
-    Y = [(0, 0), -1, -1, -1]
-    Y_bar = [(-0, -0), -1, -1, -1]
-
     i_from = None
     j_to = None
     max_Dij = None
 
+    # ================================
+    # Tree related
+    # ================================
+    X = None
+    Y = None
+    Y_bar = None
+    candidate_nodes = CandidateNodes()
+
+    # ================================
+    # Tour related
+    # ================================
     z_0 = None
     current_tour = []
     best_tour = []
     best_cost = -1
 
+    # ================================
+    # Iteration counter
+    # ================================
+    iterations = 1
+
     # ==============================================
     # Main loop
     # ==============================================
 
-    iteration = 1
+    if DEBUG:
+        debug_block_1()
+        debug_block_2()
 
-    debug_block_1()
-    debug_block_2()
+        while True:
+            debug_block_3()
+            debug_block_4()
+            debug_block_5()
 
-    # todo add check: iter_max
-    while True:
-        debug_block_3()
-        debug_block_4()
-        debug_block_5()
+            if debug_block_6():
+                debug_block_7()
+                debug_block_8()
 
-        if debug_block_6():
-            debug_block_7()
-            debug_block_8()
+            debug_block_9()
 
-        debug_block_9()
+            if not debug_block_10():
+                debug_block_11()
+            else:
+                break
 
-        if not debug_block_10():
-            debug_block_11()
-        else:
-            break
+            iterations += 1
 
-        iteration += 1
+    else:
+        block_1()
+        block_2()
 
-    # TODO print to a file
+        while True:
+            block_3()
+            block_4()
+            block_5()
+
+            if block_6():
+                block_7()
+                block_8()
+
+            block_9()
+
+            if not block_10():
+                block_11()
+            else:
+                break
+
+            iterations += 1
+
     print_solution()
