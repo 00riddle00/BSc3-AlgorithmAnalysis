@@ -109,7 +109,10 @@ def print_solution():
     print('=========================')
     print(f'Solution:')
     print('=========================\n')
-    print(best_tour)
+    for v in best_tour[:-1]:
+        print(f'{v} ->', end=' ')
+    print(best_tour[-1])
+    print(f'\nCost = {best_cost}')
 
 
 # =======================================
@@ -300,6 +303,13 @@ def block_2():
 def block_3():
     global C_prime, i_from, j_to, max_Dij, Y, Y_bar, tree_len
 
+    # reset these variables
+    Y = [(0, 0), -1, -1, -1]
+    Y_bar = [(-0, -0), -1, -1, -1]
+    i_from = None
+    j_to = None
+    max_Dij = None
+
     # calculate the change of bound for all
     # elements in the matrix whose value is 0
     C_prime_T = transpose(C_prime)
@@ -395,23 +405,49 @@ def block_6():
 def block_7():
     global current_tour, C
 
-    remaining_cost = 0
-    j_to = 0
+    paths = []
+
+    row_from = 0
+    col_to = 0
 
     if (C_prime[0][0] is None) or \
             (C_prime[0][1] is not None and C_prime[0][0] > C_prime[0][1]):
-        j_to = 1
+        col_to = 1
 
-    remaining_cost += C[ind(row_map[0])][ind(col_map[j_to])]
-    j_to = (j_to + 1) % 2
-    remaining_cost += C[ind(row_map[1])][ind(col_map[j_to])]
+    i_from = row_map[row_from]
+    j_to = col_map[col_to]
 
-    # todo fill current tour
-    current_tour = [None]
+    paths.append([i_from, j_to])
+
+    row_from = 1
+    col_to = (col_to + 1) % 2
+
+    i_from = row_map[row_from]
+    j_to = col_map[col_to]
+
+    paths.append([i_from, j_to])
+
+    # todo add full tree reading functionality
+    curr_index = Y[2]
+    for i in range(2, curr_index + 1, 2):
+        paths.append([tree[i][0][0], tree[i][0][1]])
+
+    current_tour = []
+    cost = 0
+
+    start_el = 1
+    while paths:
+        for i, path in enumerate(paths):
+            print(path)
+            if path[0] == start_el:
+                cost += C[ind(path[0])][ind(path[1])]
+                current_tour.append(start_el)
+                start_el = path[1]
+                paths.pop(i)
 
     # todo can there be bound_Y_bar at this point?
     #      or can we ever stop on Y_bar?
-    Y[1] += remaining_cost
+    Y[1] = cost
 
 
 # ===============================================
@@ -420,11 +456,12 @@ def block_7():
 # ===============================================
 
 def block_8():
-    global z_0, current_tour, best_tour
-    bound_Y_last = Y[1]
-    if z_0 is None or bound_Y_last < z_0:
-        z_0 = bound_Y_last
+    global z_0, current_tour, best_tour, best_cost
+    cost = Y[1]
+    if z_0 is None or cost < z_0:
+        z_0 = cost
         best_tour = current_tour
+        best_cost = cost
 
 
 # ===============================================
@@ -543,6 +580,7 @@ if __name__ == '__main__':
     z_0 = None
     current_tour = []
     best_tour = []
+    best_cost = -1
 
     # ==============================================
     # Main loop
@@ -554,15 +592,6 @@ if __name__ == '__main__':
     # todo add check: iter_max
     # while True:
     for i in range(3):
-
-        # todo remove this variable reset
-        Y = [(0, 0), -1, -1, -1]
-        Y_bar = [(-0, -0), -1, -1, -1]
-
-        i_from = None
-        j_to = None
-        max_Dij = None
-
         debug_block_3()
         debug_block_4()
         debug_block_5()
