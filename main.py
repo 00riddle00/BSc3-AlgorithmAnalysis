@@ -406,12 +406,12 @@ def block_7():
     j_to = (j_to + 1) % 2
     remaining_cost += C[ind(row_map[1])][ind(col_map[j_to])]
 
-    # todo perform tree branching
-    current_tour = [None]  # todo
-    # TODO can there be bound_Y_bar at this point?
-    # TODO     or can we ever stop on Y_bar?
-    # bound_Y_last = 0  # todo
-    # Y[1] bound_Y_last # todo
+    # todo fill current tour
+    current_tour = [None]
+
+    # todo can there be bound_Y_bar at this point?
+    #      or can we ever stop on Y_bar?
+    Y[1] += remaining_cost
 
 
 # ===============================================
@@ -473,13 +473,14 @@ def block_11():
     C_prime = [row[:] for row in C]
     reset_row_col_map()
 
-    # [3]:
+    # [3]: todo
     # S := [ such (i,j)s such that they are branches to X ]
 
-    # [4]
+    # [4]: todo
     # g = sum([cost((i,j)) for (i,j) in S])
+    g = 0
 
-    # [5]
+    # [5]: todo
     # for (i,j) in S:
     #     C_prime.delete_row(i)
     #     C_prime.delete_col(j)
@@ -487,11 +488,8 @@ def block_11():
     #     for (k,l) in forbidden before X:
     #         c_lk = inf
 
-    # [6]
-    # C_prime, sum_subtrahends = simplify(C_prime)
-
-    # [7]
-    # bound(X) = g + sum_subtrahends
+    C_prime, sum_subtrahends = simplify(C_prime)
+    X[1] = g + sum_subtrahends
 
 
 # ==============================================================
