@@ -109,9 +109,9 @@ def print_solution():
     print('=========================')
     print(f'Solution:')
     print('=========================\n')
-    for v in best_tour[:-1]:
+    for v in best_tour:
         print(f'{v} ->', end=' ')
-    print(best_tour[-1])
+    print(best_tour[0])
     print(f'\nCost = {best_cost}')
 
 
@@ -249,13 +249,12 @@ def debug_block_10():
         debug('The current chosen vertex does not contain the better tour '
               'than we already have. The algorithm stops here.\n')
     else:
-        if not len(best_tour):
-            comment_on_best_tour = 'which is none so far'
-        else:
-            best_tour_bound = '= ?'
-            comment_on_best_tour = f'bound={best_tour_bound}'
+        best_tour_bound = 'infinity'
+        if len(best_tour):
+            best_tour_bound = f'{best_cost}'
+
         debug(f'The current chosen vertex has a lower bound (= {X[1]}) than '
-              f'the current best tour ({comment_on_best_tour}).')
+              f'the current best tour (bound = {best_tour_bound}).')
         debug('Hence the algorithm proceeds.\n')
 
     return is_no_better_path
@@ -263,14 +262,9 @@ def debug_block_10():
 
 def debug_block_11():
     debug_block_name(11)
-    bound_of_X = X[1]
-    old_bound_of_X = bound_of_X
+    is_the_same = block_11()
 
-    block_11()
-
-    bound_of_X = X[1]
-
-    if old_bound_of_X == bound_of_X:
+    if is_the_same:
         debug('Same vertex has been picked as it was before,'
               ' the matrix C_prime does not change.\n')
         debug_M('C_prime', C_prime)
@@ -278,7 +272,7 @@ def debug_block_11():
         i, j = X[0][0], X[0][1]
         debug(f'Bound("({i},{j})") = {X[1]}\n')
     else:
-        debug('Matrix has been corrected. It is now:')
+        debug('Matrix has been corrected. It is now:\n')
         debug_M('C_prime', C_prime)
 
         debug('The bound of X has been updated. It is now:')
@@ -382,7 +376,7 @@ def block_4():
     bound_Y_bar = X[1] + max_Dij
     Y_bar[1] = bound_Y_bar
     # we always check Y first, so let's save Y_bar for later
-    Y_bar[3] = possible_vertices_len
+    Y_bar[3] = possible_vertices_len  # todo delete unused
     possible_vertices.append(Y_bar)
     possible_vertices_len += 1
 
@@ -410,7 +404,6 @@ def block_5():
 # check matrix dimensions
 def block_6():
     global C_prime
-    print("LEN=", len(C_prime))
     return len(C_prime) == 2
 
 
@@ -443,10 +436,24 @@ def block_7():
 
     paths.append([i_from, j_to])
 
-    # todo add full tree reading functionality
-    curr_index = Y[2]
-    for i in range(2, curr_index + 1, 2):
-        paths.append([tree[i][0][0], tree[i][0][1]])
+    # todo save some of this state for block 11?
+    # traversing the tree
+    node = Y
+
+    while True:
+        node_index = node[2]
+        is_bar_vertex = node[0][0] < 0
+        parent_index = node_index - 1
+
+        if not is_bar_vertex:
+            parent_index -= 1
+            paths.append([node[0][0], node[0][1]])
+
+        if parent_index != 0:
+            parent = tree[parent_index]
+            node = parent
+        else:
+            break
 
     current_tour = []
     cost = 0
@@ -484,15 +491,19 @@ def block_8():
 # ===============================================
 
 def block_9():
-    global X, Y, possible_vertices, possible_vertices_len
+    global X, Y, tree, possible_vertices, possible_vertices_len, tree_len
 
-    for Y_possible in possible_vertices:
+    for i, Y_possible in enumerate(possible_vertices[::-1], 1):
         if Y_possible[1] < Y[1]:
-            possible_vertices.pop(Y_possible[3])
-            Y_possible[3] = -1
-            possible_vertices_len -= 1
+            possible_vertices = possible_vertices[:-i]
+            vertex_index_in_tree = Y_possible[2]
+            tree_len = vertex_index_in_tree + 1
+            tree = tree[:tree_len]
+            for j in range(tree_len):
+                tree[j][2] = j
 
             X = Y_possible
+            break
         else:
             X = Y
 
@@ -521,12 +532,11 @@ def block_11():
     # fixme
     if X[0] == Y[0]:
         # C_prime does not change, it's the same that we need
-        return
+        return True
 
     # traversing the tree
     node = X
     parent_nodes = []  # todo is it needed here?
-    parent_index = -1
     included_paths = []
     excluded_paths = []
 
@@ -534,11 +544,13 @@ def block_11():
         node_index = node[2]
         is_bar_vertex = node[0][0] < 0
         parent_index = node_index - 1
+
         if is_bar_vertex:
             excluded_paths.append(node[0])
         else:
             parent_index -= 1
             included_paths.append(node[0])
+
         if parent_index != 0:
             parent = tree[parent_index]
             parent_nodes.append(parent)
@@ -569,10 +581,11 @@ def block_11():
 
     # adjust bound(X) value
     X[1] = cost_included_paths + sum_subtrahends
-    print(X[1])
 
-    # todo adjust the tree
+    # todo adjust the tree (?)
     # (...)
+
+    return False
 
 
 # ==============================================================
@@ -616,11 +629,13 @@ if __name__ == '__main__':
     col_map = []
 
     tree = []
-    tree_len = 0
-    possible_vertices = []
-    possible_vertices_len = 0
+    tree_len = 0  # todo delete this redundant variable
+    possible_vertices = []  # todo save only tree index here
+    possible_vertices_len = 0  # todo this redundant delete
 
     # [ ('i', 'j'), bound, place in the tree, place in the list of possible vertices]
+    # todo delete redundant last parameter
+    # todo do we need "place in the tree" index?
     X = [(None, None), -1, -1, -1]
     Y = [(0, 0), -1, -1, -1]
     Y_bar = [(-0, -0), -1, -1, -1]
