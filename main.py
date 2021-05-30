@@ -614,22 +614,25 @@ if __name__ == '__main__':
     # From the lecture exercises
     # 1 -> 2 -> 3 -> 5 -> 4 -> 1
     # Cost = 50
-    C = [[0, 1, 21, 27, 5],
-         [30, 0, 18, 23, 23],
-         [27, 29, 0, 20, 10],
-         [15, 2, 27, 0, 14],
-         [28, 9, 15, 6, 0]]
+    # C = [[0, 1, 21, 27, 5],
+    #      [30, 0, 18, 23, 23],
+    #      [27, 29, 0, 20, 10],
+    #      [15, 2, 27, 0, 14],
+    #      [28, 9, 15, 6, 0]]
 
     # From the book "Гудман С., Хидетниеми С. -
     # Введение в разработку и анализ алгоритмов", pp. 130
     # 1 -> 2 -> 3 -> 5 -> 4 -> 1
     # Cost = 62
-    C = [[0, 25, 40, 31, 27],
-         [5, 0, 17, 30, 25],
-         [19, 15, 0, 6, 1],
-         [9, 50, 24, 0, 6],
-         [22, 8, 7, 10, 0]]
+    # C = [[0, 25, 40, 31, 27],
+    #      [5, 0, 17, 30, 25],
+    #      [19, 15, 0, 6, 1],
+    #      [9, 50, 24, 0, 6],
+    #      [22, 8, 7, 10, 0]]
 
+    # Distances between cities in Lithuania.
+    # URL=<http://www.lidata.eu/en/index.php?file=files/mokymai/stat/stat.html&course_file=stat_III_10_1.html>
+    # [accesed on 2021-05-28]
     C = [
         [0, 243, 57, 248, 144, 66, 120, 281, 61, 294, 171, 238, 307, 211, 242, 186, 49, 84, 101, 254],
         [243, 0, 296, 94, 208, 178, 125, 261, 234, 183, 66, 64, 236, 101, 265, 174, 287, 250, 202, 161],
@@ -764,7 +767,11 @@ if __name__ == '__main__':
             iterations += 1
 
     print_solution()
-    print_cities()
+
+    # temporary line to print cities when
+    # the biggest matrix is used as an input
+    if len(C) == 20:
+        print_cities()
 
     end_time = time.time()
     print("--- %s seconds ---" % (end_time - start_time))
