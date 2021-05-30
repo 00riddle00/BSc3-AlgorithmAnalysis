@@ -119,6 +119,12 @@ def print_solution():
 # Functions changing program variables
 # =======================================
 
+def reset_C_prime():
+    global C_prime
+    C_prime = [row[:] for row in C]
+    reset_row_col_map()
+
+
 def reset_row_col_map():
     global C_prime, row_map, col_map
 
@@ -285,10 +291,8 @@ def block_1():
 
 def block_2():
     global C, C_prime, tree, X, row_map, col_map, tree_len
-    C_prime = [row[:] for row in C]
 
-    reset_row_col_map()
-
+    reset_C_prime()
     C_prime, bound_root = simplify(C_prime)
     X[1] = bound_root
     tree.append(X)
@@ -368,9 +372,6 @@ def block_4():
 def block_5():
     global C_prime
 
-    if j_to in row_map and i_from in col_map:
-        C_prime[row_map.index(j_to)][col_map.index(i_from)] = None
-
     # delete i-th row
     C_prime = C_prime[:row_map.index(i_from)] + C_prime[(row_map.index(i_from) + 1):]
 
@@ -380,6 +381,9 @@ def block_5():
     C_prime = transpose(C_prime_T)
 
     fix_map_on_delete(i_from, j_to)
+
+    if j_to in row_map and i_from in col_map:
+        C_prime[row_map.index(j_to)][col_map.index(i_from)] = None
 
     C_prime, sum_subtrahends = simplify(C_prime)
 
@@ -500,33 +504,74 @@ def block_10():
 # ===============================================
 
 def block_11():
-    global X, Y, C, C_prime
+    global X, Y, C, C_prime, tree, tree_len, possible_vertices, possible_vertices_len
 
     # Is the next chosen vertex X the same as the curent vertex Y?
+    # fixme
     if X[0] == Y[0]:
         # C_prime does not change, it's the same that we need
         return
 
-    C_prime = [row[:] for row in C]
-    reset_row_col_map()
+    # traversing the tree
+    node = X
+    parent_nodes = []  # todo is it needed here?
+    parent_index = -1
+    included_paths = []
+    excluded_paths = []
 
-    # [3]: todo
-    # S := [ such (i,j)s such that they are branches to X ]
+    while True:
+        node_index = node[2]
+        is_bar_vertex = node[0][0] < 0
+        parent_index = node_index - 1
+        if is_bar_vertex:
+            excluded_paths.append(node[0])
+        else:
+            parent_index -= 1
+            included_paths.append(node[0])
+        if parent_index != 0:
+            parent = tree[parent_index]
+            parent_nodes.append(parent)
+            node = parent
+        else:
+            break
 
-    # [4]: todo
-    # g = sum([cost((i,j)) for (i,j) in S])
-    g = 0
+    reset_C_prime()
 
-    # [5]: todo
-    # for (i,j) in S:
-    #     C_prime.delete_row(i)
-    #     C_prime.delete_col(j)
-    #     c_ji = inf
-    #     for (k,l) in forbidden before X:
-    #         c_lk = inf
+    for path in excluded_paths:
+        i_from = -path[0]
+        j_to = -path[1]
+        C_prime[row_map.index(i_from)][col_map.index(j_to)] = None
+
+    cost_included_paths = 0
+
+    for path in included_paths:
+        i_from = path[0]
+        j_to = path[1]
+
+        # todo should we count excluded paths here as well?
+        cost_included_paths += C[ind(i_from)][ind(j_to)]
+
+        if j_to in row_map and i_from in col_map:
+            C_prime[row_map.index(j_to)][col_map.index(i_from)] = None
+
+        # delete i-th row
+        C_prime = C_prime[:row_map.index(i_from)] + C_prime[(row_map.index(i_from) + 1):]
+
+        # delete j-th column
+        C_prime_T = transpose(C_prime)
+        C_prime_T = C_prime_T[:col_map.index(j_to)] + C_prime_T[(col_map.index(j_to) + 1):]
+        C_prime = transpose(C_prime_T)
+
+        fix_map_on_delete(i_from, j_to)
 
     C_prime, sum_subtrahends = simplify(C_prime)
-    X[1] = g + sum_subtrahends
+
+    # adjust bound(X) value
+    X[1] = cost_included_paths + sum_subtrahends
+    print(X[1])
+
+    # todo adjust the tree
+    # (...)
 
 
 # ==============================================================
@@ -590,8 +635,7 @@ if __name__ == '__main__':
     debug_block_2()
 
     # todo add check: iter_max
-    # while True:
-    for i in range(3):
+    while True:
         debug_block_3()
         debug_block_4()
         debug_block_5()
