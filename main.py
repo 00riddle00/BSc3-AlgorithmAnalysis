@@ -132,6 +132,19 @@ def reset_row_col_map():
     col_map = [i for i in range(1, len(C_prime) + 1)]
 
 
+def delete_row_col(i_row, j_col):
+    global C_prime
+    # delete i-th row
+    C_prime = C_prime[:row_map.index(i_row)] + C_prime[(row_map.index(i_row) + 1):]
+
+    # delete j-th column
+    C_prime_T = transpose(C_prime)
+    C_prime_T = C_prime_T[:col_map.index(j_col)] + C_prime_T[(col_map.index(j_col) + 1):]
+    C_prime = transpose(C_prime_T)
+
+    fix_map_on_delete(i_row, j_col)
+
+
 def fix_map_on_delete(row_from_map, col_from_map):
     global row_map, col_map
 
@@ -140,6 +153,12 @@ def fix_map_on_delete(row_from_map, col_from_map):
 
     col_index = col_map.index(col_from_map) + 1
     col_map.pop(ind(col_index))
+
+
+def disable_path(i_row, j_col):
+    global row_map, col_map
+    if i_row in row_map and j_col in col_map:
+        C_prime[row_map.index(i_row)][col_map.index(j_col)] = None
 
 
 # ==============================================================
@@ -372,19 +391,8 @@ def block_4():
 def block_5():
     global C_prime
 
-    # delete i-th row
-    C_prime = C_prime[:row_map.index(i_from)] + C_prime[(row_map.index(i_from) + 1):]
-
-    # delete j-th column
-    C_prime_T = transpose(C_prime)
-    C_prime_T = C_prime_T[:col_map.index(j_to)] + C_prime_T[(col_map.index(j_to) + 1):]
-    C_prime = transpose(C_prime_T)
-
-    fix_map_on_delete(i_from, j_to)
-
-    if j_to in row_map and i_from in col_map:
-        C_prime[row_map.index(j_to)][col_map.index(i_from)] = None
-
+    delete_row_col(i_from, j_to)
+    disable_path(j_to, i_from)
     C_prime, sum_subtrahends = simplify(C_prime)
 
     bound_Y = X[1] + sum_subtrahends
@@ -551,18 +559,8 @@ def block_11():
         # todo should we count excluded paths here as well?
         cost_included_paths += C[ind(i_from)][ind(j_to)]
 
-        if j_to in row_map and i_from in col_map:
-            C_prime[row_map.index(j_to)][col_map.index(i_from)] = None
-
-        # delete i-th row
-        C_prime = C_prime[:row_map.index(i_from)] + C_prime[(row_map.index(i_from) + 1):]
-
-        # delete j-th column
-        C_prime_T = transpose(C_prime)
-        C_prime_T = C_prime_T[:col_map.index(j_to)] + C_prime_T[(col_map.index(j_to) + 1):]
-        C_prime = transpose(C_prime_T)
-
-        fix_map_on_delete(i_from, j_to)
+        delete_row_col(i_from, j_to)
+        disable_path(j_to, i_from)
 
     C_prime, sum_subtrahends = simplify(C_prime)
 
