@@ -110,11 +110,12 @@ def simplify(M):
 # Functions using program variables
 # =======================================
 
-def print_cities():
-    global best_tour, cities
-    for v in best_tour:
-        print(f'{cities[v]} ->', end=' ')
-    print(f'{cities[best_tour[0]]}\n')
+def print_names():
+    global best_tour, names
+    if names:
+        for v in best_tour:
+            print(f'{names[v]} ->', end=' ')
+        print(f'{names[best_tour[0]]}\n')
 
 
 def print_solution():
@@ -291,7 +292,7 @@ def debug_block_11():
 
 
 # ==============================================================
-# Solution tree imlementation
+# Solution tree implementation
 # ==============================================================
 
 class Node:
@@ -602,7 +603,9 @@ if __name__ == '__main__':
     # Input
     # ==============================================
 
-    # distance (between cities) matrix 'C'
+    # distance (between points) matrix 'C',
+    # which is read from 'input.txt' file:
+    #
     #         col no.  1    2    3   ...   n
     # row no.
     #   1            (a_11 a_12 a_13 ... a_1n)
@@ -610,74 +613,47 @@ if __name__ == '__main__':
     #   3            (a_31 a_32 a_33 ... a_3n)
     #  ...
     #   n            (an_1 an_2 an_3 ... a_nn)
+    #
+    # see input.example.txt file for input
+    # format requirements
+    #
+    with open("input.txt") as input_file:
 
-    # From the lecture exercises
-    # 1 -> 2 -> 3 -> 5 -> 4 -> 1
-    # Cost = 50
-    # C = [[0, 1, 21, 27, 5],
-    #      [30, 0, 18, 23, 23],
-    #      [27, 29, 0, 20, 10],
-    #      [15, 2, 27, 0, 14],
-    #      [28, 9, 15, 6, 0]]
+        lines = []
+        names = {}
+        matrix_size = 0
+        C = []
 
-    # From the book "Гудман С., Хидетниеми С. -
-    # Введение в разработку и анализ алгоритмов", pp. 130
-    # 1 -> 2 -> 3 -> 5 -> 4 -> 1
-    # Cost = 62
-    # C = [[0, 25, 40, 31, 27],
-    #      [5, 0, 17, 30, 25],
-    #      [19, 15, 0, 6, 1],
-    #      [9, 50, 24, 0, 6],
-    #      [22, 8, 7, 10, 0]]
+        for line in input_file:
+            if line != '\n' and not line.startswith('#'):
+                lines.append(line.split())
 
-    # Distances between cities in Lithuania.
-    # URL=<http://www.lidata.eu/en/index.php?file=files/mokymai/stat/stat.html&course_file=stat_III_10_1.html>
-    # [accesed on 2021-05-28]
-    C = [
-        [0, 243, 57, 248, 144, 66, 120, 281, 61, 294, 171, 238, 307, 211, 242, 186, 49, 84, 101, 254],
-        [243, 0, 296, 94, 208, 178, 125, 261, 234, 183, 66, 64, 236, 101, 265, 174, 287, 250, 202, 161],
-        [57, 296, 0, 300, 171, 119, 172, 320, 88, 343, 224, 288, 349, 264, 269, 213, 58, 111, 128, 281],
-        [248, 94, 300, 0, 161, 182, 134, 196, 238, 98, 97, 158, 151, 39, 200, 243, 297, 234, 231, 250],
-        [144, 208, 171, 161, 0, 86, 114, 149, 83, 172, 158, 246, 178, 118, 98, 261, 193, 72, 186, 291],
-        [66, 178, 119, 182, 86, 0, 54, 215, 56, 228, 106, 171, 241, 146, 184, 175, 115, 73, 101, 205],
-        [120, 125, 172, 134, 114, 54, 0, 208, 110, 183, 59, 147, 234, 97, 193, 162, 168, 127, 130, 193],
-        [281, 261, 320, 196, 149, 215, 208, 0, 233, 120, 239, 325, 75, 159, 53, 370, 329, 222, 310, 401],
-        [61, 234, 88, 238, 83, 56, 110, 233, 0, 255, 162, 232, 262, 201, 181, 222, 110, 23, 137, 267],
-        [294, 183, 343, 98, 172, 228, 183, 120, 255, 0, 165, 247, 55, 80, 153, 327, 342, 244, 299, 335],
-        [171, 66, 224, 97, 158, 106, 59, 239, 162, 165, 0, 88, 219, 79, 224, 162, 220, 178, 136, 170],
-        [238, 64, 288, 158, 246, 171, 147, 325, 232, 247, 88, 0, 300, 165, 312, 130, 243, 249, 159, 97],
-        [307, 236, 349, 151, 178, 241, 234, 75, 262, 55, 219, 300, 0, 134, 124, 381, 355, 251, 336, 388],
-        [211, 101, 264, 39, 118, 146, 97, 159, 201, 80, 79, 165, 134, 0, 157, 241, 260, 190, 213, 249],
-        [242, 265, 269, 200, 98, 184, 193, 53, 181, 153, 224, 312, 124, 157, 0, 355, 291, 170, 284, 385],
-        [186, 174, 213, 243, 261, 175, 162, 370, 222, 327, 162, 130, 381, 241, 355, 0, 169, 245, 85, 68],
-        [49, 287, 58, 297, 193, 115, 168, 329, 110, 342, 220, 243, 355, 260, 291, 169, 0, 133, 84, 237],
-        [84, 250, 111, 234, 72, 73, 127, 222, 23, 244, 178, 249, 251, 190, 170, 245, 133, 0, 161, 284],
-        [101, 202, 128, 231, 186, 101, 130, 310, 137, 299, 136, 159, 336, 213, 284, 85, 84, 161, 0, 152],
-        [254, 161, 281, 250, 291, 205, 193, 401, 267, 335, 170, 97, 388, 249, 385, 68, 237, 284, 152, 0]
-    ]
+        if lines[0][0] == '@names':
+            for i, line in enumerate(lines[1:], 1):
+                if line[0] == '\n' or line[0].startswith('['):
+                    if not matrix_size:
+                        matrix_size = i - 1
+                    elif matrix_size != i - 1:
+                        raise ValueError(f'there should be a total of {matrix_size} names, got {i - 1} instead')
+                    break
+                else:
+                    names[i] = line[0]
 
-    cities = {
-        1: 'Alytus',
-        2: 'Biržai',
-        3: 'Druskininkai',
-        4: 'Joniškis',
-        5: 'Jurbarkas',
-        6: 'Kaunas',
-        7: 'Kėdainiai',
-        8: 'Klaipėda',
-        9: 'Marijampolė',
-        10: 'Mažeikiai',
-        11: 'Panevėžys',
-        12: 'Rokiškis',
-        13: 'Skuodas',
-        14: 'Šiauliai',
-        15: 'Šilutė',
-        16: 'Švenčionys',
-        17: 'Varėna',
-        18: 'Vilkaviškis',
-        19: 'Vilnius',
-        20: 'Visaginas'
-    }
+            lines = lines[matrix_size + 1:]
+
+        if lines[0][0].startswith('['):
+            if not matrix_size:
+                matrix_size = len(lines[0][1:-1])
+            for i, row in enumerate(lines, 1):
+                if line[0] == '\n' or line[0].startswith('@'):
+                    break
+                elif len(row[1:-1]) == matrix_size:
+                    C.append([int(el) for el in row[1:-1]])
+                else:
+                    raise ValueError(
+                        f'matrix at row {i} should have {matrix_size} columns, got {len(row[1:-1])} instead')
+
+            lines = lines[matrix_size:]
 
     # ==============================================
     # Setting up variables
@@ -767,11 +743,7 @@ if __name__ == '__main__':
             iterations += 1
 
     print_solution()
-
-    # temporary line to print cities when
-    # the biggest matrix is used as an input
-    if len(C) == 20:
-        print_cities()
+    print_names()
 
     end_time = time.time()
     print("--- %s seconds ---" % (end_time - start_time))
