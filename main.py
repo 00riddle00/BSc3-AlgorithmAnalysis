@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import time
+from os import path
 
 # ===============================================
 # Global variables
@@ -11,7 +12,7 @@ global DEBUG, INPUT_FILE, \
     iterations
 
 # choose for verbose output (every step annotated)
-DEBUG = True
+DEBUG = False
 
 INPUT_FILE = 'input.txt'
 
@@ -621,7 +622,7 @@ def block_11():
 
 if __name__ == '__main__':
     # ==============================================
-    # Input
+    # Get input
     # ==============================================
 
     # distance (between points) matrix 'C',
@@ -638,6 +639,9 @@ if __name__ == '__main__':
     # see input.example.txt file for input
     # format requirements
     #
+    if not path.exists(INPUT_FILE):
+        raise ValueError(f'File "{INPUT_FILE}" does not exist')
+
     with open(INPUT_FILE) as input_file:
 
         lines = []
