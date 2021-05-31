@@ -6,7 +6,8 @@ import time
 # ===============================================
 global DEBUG, \
     C_prime, row_map, col_map, i_from, j_to, max_Dij, \
-    X, Y, Y_bar, candidate_nodes, z_0, current_tour, best_tour, best_cost, \
+    X, Y, Y_bar, candidate_nodes, \
+    z_0, current_tour, best_tour, best_cost, \
     iterations
 
 DEBUG = False
@@ -41,8 +42,8 @@ def debug_block_name(block_no):
 # ===============================================
 
 # =======================================
-# Functions which do not
-# change program variables
+# Functions which do not change program
+# variables
 # =======================================
 
 # convert one-indexed to zero-indexed
@@ -149,11 +150,14 @@ def reset_row_col_map():
 def delete_row_col(i_row, j_col):
     global C_prime
     # delete i-th row
-    C_prime = C_prime[:row_map.index(i_row)] + C_prime[(row_map.index(i_row) + 1):]
+    C_prime = \
+        C_prime[:row_map.index(i_row)] + C_prime[(row_map.index(i_row) + 1):]
 
     # delete j-th column
     C_prime_T = transpose(C_prime)
-    C_prime_T = C_prime_T[:col_map.index(j_col)] + C_prime_T[(col_map.index(j_col) + 1):]
+    C_prime_T = \
+        C_prime_T[:col_map.index(j_col)] + \
+        C_prime_T[(col_map.index(j_col) + 1):]
     C_prime = transpose(C_prime_T)
 
     fix_map_on_delete(i_row, j_col)
@@ -196,7 +200,9 @@ def debug_block_2():
 def debug_block_3():
     debug_block_name(3)
     block_3()
-    debug(f'Child vertices: Y_bar = ("{Y_bar.path[0]},{Y_bar.path[0]}"), Y = ("{Y.path[0]},{Y.path[0]}")')
+    debug(f'Child vertices: '
+          f'Y_bar = ("{Y_bar.path[0]},{Y_bar.path[0]}"), '
+          f'Y = ("{Y.path[0]},{Y.path[0]}")')
     debug(f'from: i = {i_from}, to: j = {j_to}')
     debug(f'max_Dij = {max_Dij}\n')
 
@@ -241,7 +247,8 @@ def debug_block_8():
     if z_0 != old_z_0:
         debug(f'Better tour has been found: {best_tour}\n')
     else:
-        debug(f'We did not find a better tour. Best tour so far: {best_tour}\n')
+        debug(
+            f'We did not find a better tour. Best tour so far: {best_tour}\n')
 
 
 def debug_block_9():
@@ -264,8 +271,9 @@ def debug_block_10():
         if len(best_tour):
             best_tour_bound = f'{best_cost}'
 
-        debug(f'The current chosen vertex has a lower bound (= {X.bound}) than '
-              f'the current best tour (bound = {best_tour_bound}).')
+        debug(
+            f'The current chosen vertex has a lower bound (= {X.bound}) than '
+            f'the current best tour (bound = {best_tour_bound}).')
         debug('Hence the algorithm proceeds.\n')
 
     return is_no_better_path
@@ -347,8 +355,8 @@ def block_1():
 
 
 # ===============================================
-# Block 2: Matrix simplification and finding
-#          the bound of the root vertex
+# Block 2: Matrix simplification and finding the
+#          bound of the root vertex
 # ===============================================
 
 def block_2():
@@ -360,7 +368,8 @@ def block_2():
 
 
 # ===============================================
-# Block 3: Choosing the next vertex "(i,j)" for branching
+# Block 3: Choosing the next vertex "(i,j)" for
+#          branching
 # ===============================================
 
 def block_3():
@@ -385,9 +394,14 @@ def block_3():
                 # i-th row and j-th column element is zero
                 # hence there is no path i -> j, meaning there are
                 # such paths 1 -> k and l -> 2 where k != 2 and l != 1.
+                #
                 # For every such path their bound will increase by
-                # the size D[i,j] = min(i-th row without j-th element) + min(j-th column without i-th element)
-                D_ij = min_no_element(C_prime[ind(i)], ind(j)) + min_no_element(C_prime_T[ind(j)], ind(i))
+                # the size D[i,j] =
+                #   min(i-th row without j-th element) +
+                #   min(j-th column without i-th element)
+                D_ij = \
+                    min_no_element(C_prime[ind(i)], ind(j)) + \
+                    min_no_element(C_prime_T[ind(j)], ind(i))
                 # if there are more than one maximum value,
                 # we choose the first one encountered as maximum
 
@@ -404,14 +418,15 @@ def block_3():
 
 
 # ===============================================
-# Block 4: Branching - finding the bound of
-#          the vertex "(i,j)_bar"
+# Block 4: Branching - finding the bound of the
+#          vertex "(i,j)_bar"
 # ===============================================
 
 def block_4():
     global max_Dij, candidate_nodes
     Y_bar.bound = X.bound + max_Dij
-    # we always check Y first, so let's save Y_bar for later
+    # we always check Y first, so let's save
+    # Y_bar for later
     candidate_nodes.add(Y_bar)
 
 
@@ -444,7 +459,8 @@ def block_6():
 
 
 # ===============================================
-# Block 7: Exhaustive estimation of the remaining matrix
+# Block 7: Exhaustive estimation of the remaining
+#          matrix
 # ===============================================
 
 def block_7():
@@ -499,8 +515,8 @@ def block_7():
 
 
 # ===============================================
-# Block 8: Is bound_Y_last < z_0? If yes, save the
-#          current tour as the best so far
+# Block 8: Is bound_Y_last < z_0? If yes, save
+#          the current tour as the best so far
 # ===============================================
 
 def block_8():
@@ -548,9 +564,11 @@ def block_10():
 def block_11():
     global C, C_prime
 
-    # Is the next chosen vertex X the same as the curent vertex Y?
+    # Is the next chosen vertex X the same as
+    # the curent vertex Y?
     if X == Y:
-        # C_prime does not change, it's the same that we need
+        # C_prime does not change, it's the same
+        # that we need
         return True
 
     # traversing the tree
@@ -634,7 +652,9 @@ if __name__ == '__main__':
                     if not matrix_size:
                         matrix_size = i - 1
                     elif matrix_size != i - 1:
-                        raise ValueError(f'there should be a total of {matrix_size} names, got {i - 1} instead')
+                        raise ValueError(
+                            f'there should be a total of {matrix_size} '
+                            f'names, got {i - 1} instead')
                     break
                 else:
                     names[i] = line[0]
@@ -651,7 +671,8 @@ if __name__ == '__main__':
                     C.append([int(el) for el in row[1:-1]])
                 else:
                     raise ValueError(
-                        f'matrix at row {i} should have {matrix_size} columns, got {len(row[1:-1])} instead')
+                        f'matrix at row {i} should have {matrix_size} '
+                        f'columns, got {len(row[1:-1])} instead')
 
             lines = lines[matrix_size:]
 
