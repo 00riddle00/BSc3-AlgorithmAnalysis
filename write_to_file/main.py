@@ -4,7 +4,8 @@ import time
 # ===============================================
 # Global variables
 # ===============================================
-global DEBUG, INPUT_FILE, \
+global DEBUG, \
+    WRITE_TO_FILE, INPUT_FILE, OUTPUT_FILE, \
     C_prime, row_map, col_map, i_from, j_to, max_Dij, \
     X, Y, Y_bar, candidate_nodes, \
     z_0, current_tour, best_tour, best_cost, \
@@ -12,8 +13,10 @@ global DEBUG, INPUT_FILE, \
 
 # choose for verbose output (every step annotated)
 DEBUG = True
-
+# choose for writing output to a file 'output.txt'
+WRITE_TO_FILE = True
 INPUT_FILE = 'input.txt'
+OUTPUT_FILE = 'output.txt'
 
 
 # ==============================================================
@@ -23,7 +26,7 @@ INPUT_FILE = 'input.txt'
 def debug(text):
     global DEBUG
     if DEBUG:
-        print(text)
+        _print(text)
 
 
 def debug_M(matrix_name, M):
@@ -35,9 +38,9 @@ def debug_M(matrix_name, M):
 def debug_block_name(block_no):
     global DEBUG, iterations
     if DEBUG:
-        print('=========================')
-        print(f'Block {block_no} (iteration {iterations})')
-        print('=========================\n')
+        _print('=========================')
+        _print(f'Block {block_no} (iteration {iterations})')
+        _print('=========================\n')
 
 
 # ===============================================
@@ -56,10 +59,10 @@ def ind(index):
 
 
 def print_M(matrix_name, M):
-    print(f'{matrix_name} = ')
+    _print(f'{matrix_name} = ')
     for row in M:
-        print('    ', row)
-    print('\n')
+        _print(f'    {row}')
+    _print('\n')
 
 
 # find minimum ignoring None values
@@ -114,23 +117,30 @@ def simplify(M):
 # Functions using program variables
 # =======================================
 
+def _print(*args, end='\n'):
+    if WRITE_TO_FILE:
+        f.write(f'{str(*args)}\n')
+    else:
+        print(*args, end=end)
+
+
 def print_names():
     global best_tour, names
     if names:
         for v in best_tour:
-            print(f'{names[v]} ->', end=' ')
-        print(f'{names[best_tour[0]]}\n')
+            _print(f'{names[v]} ->', end=' ')
+        _print(f'{names[best_tour[0]]}\n')
 
 
 def print_solution():
     global best_tour
-    print('=========================')
-    print(f'Solution:')
-    print('=========================\n')
+    _print('=========================')
+    _print(f'Solution:')
+    _print('=========================\n')
     for v in best_tour:
-        print(f'{v} ->', end=' ')
-    print(best_tour[0])
-    print(f'\nCost = {best_cost}\n')
+        _print(f'{v} ->', end=' ')
+    _print(best_tour[0])
+    _print(f'\nCost = {best_cost}\n')
 
 
 # =======================================
@@ -190,7 +200,7 @@ def debug_block_1():
     debug_block_name(1)
     block_1()
     debug('Input (distance matrix):\n')
-    debug_M('C', C)
+    debug_M(f'C', C)
 
 
 def debug_block_2():
@@ -720,6 +730,9 @@ if __name__ == '__main__':
     # Main loop
     # ==============================================
 
+    if WRITE_TO_FILE:
+        f = open(OUTPUT_FILE, 'w')
+
     start_time = time.time()
 
     if DEBUG:
@@ -770,4 +783,7 @@ if __name__ == '__main__':
     print_names()
 
     end_time = time.time()
-    print("--- %s seconds ---" % (end_time - start_time))
+    _print("--- %s seconds ---" % (end_time - start_time))
+
+    if WRITE_TO_FILE:
+        f.close()
