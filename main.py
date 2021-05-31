@@ -6,7 +6,7 @@ from os import path
 # Global variables
 # ===============================================
 global DEBUG, INPUT_FILE, \
-    C_prime, row_map, col_map, i_from, j_to, max_Dij, \
+    C, C_prime, row_map, col_map, i_from, j_to, max_Dij, \
     X, Y, Y_bar, candidate_nodes, \
     z_0, current_tour, best_tour, best_cost, \
     iterations
