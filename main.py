@@ -2,20 +2,17 @@
 import argparse
 import sys
 import time
-from os import path
 
 # ===============================================
 # Global variables
 # ===============================================
-global DEBUG, INPUT_FILE, OUTPUT_FILE, \
+global DEBUG, \
     C, C_prime, row_map, col_map, i_from, j_to, max_Dij, \
     X, Y, Y_bar, candidate_nodes, \
     best_cost, current_tour, best_tour, \
     iterations
 
 DEBUG = False
-INPUT_FILE = None
-OUTPUT_FILE = None
 
 
 # ==============================================================
@@ -641,7 +638,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    INPUT_FILE = args.input_file
     DEBUG = args.debug
 
     if args.output_file:
@@ -665,7 +661,7 @@ if __name__ == '__main__':
     # see input.example.txt file for input
     # format requirements
 
-    with open(INPUT_FILE) as input_file:
+    with open(args.input_file) as input_file:
 
         lines = []
         names = {}
