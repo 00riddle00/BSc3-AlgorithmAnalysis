@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import time
 from os import path
 
@@ -8,11 +8,11 @@ from os import path
 global DEBUG, INPUT_FILE, \
     C, C_prime, row_map, col_map, i_from, j_to, max_Dij, \
     X, Y, Y_bar, candidate_nodes, \
-    z_0, current_tour, best_tour, best_cost, \
+    best_cost, current_tour, best_tour, \
     iterations
 
 # choose for verbose output (every step annotated)
-DEBUG = False
+DEBUG = True
 
 INPUT_FILE = 'input.txt'
 
@@ -124,7 +124,7 @@ def print_names():
 
 
 def print_solution():
-    global best_tour
+    global best_tour, best_cost
     print('=========================')
     print(f'Solution:')
     print('=========================\n')
@@ -244,11 +244,11 @@ def debug_block_7():
 
 def debug_block_8():
     debug_block_name(8)
-    old_z_0 = z_0
+    old_best_cost = best_cost
 
     block_8()
 
-    if z_0 != old_z_0:
+    if best_cost != old_best_cost:
         debug(f'Better tour has been found: {best_tour}\n')
     else:
         debug(
@@ -519,17 +519,16 @@ def block_7():
 
 
 # ===============================================
-# Block 8: Is bound_Y_last < z_0? If yes, save
+# Block 8: Is bound_Y_last < best_cost? If yes, save
 #          the current tour as the best so far
 # ===============================================
 
 def block_8():
-    global z_0, current_tour, best_tour, best_cost
+    global best_cost, current_tour, best_tour
     cost = Y.bound
-    if z_0 is None or cost < z_0:
-        z_0 = cost
-        best_tour = current_tour
+    if best_cost is None or cost < best_cost:
         best_cost = cost
+        best_tour = current_tour
 
 
 # ===============================================
@@ -554,8 +553,8 @@ def block_9():
 # ===============================================
 
 def block_10():
-    global z_0
-    if z_0 is not None and z_0 <= X.bound:
+    global best_cost
+    if best_cost is not None and best_cost <= X.bound:
         return True
     else:
         return False
@@ -649,9 +648,14 @@ if __name__ == '__main__':
         matrix_size = 0
         C = []
 
-        for line in input_file:
+        for line in input_file.readlines():
             if line != '\n' and not line.startswith('#'):
                 lines.append(line.split())
+
+        # this fixes a weird bug with trailing
+        # newlines in the input file
+        for line in lines:
+            pass
 
         if lines[0][0] == '@names':
             for i, line in enumerate(lines[1:], 1):
@@ -679,7 +683,9 @@ if __name__ == '__main__':
                 else:
                     raise ValueError(
                         f'matrix at row {i} should have {matrix_size} '
-                        f'columns, got {len(row[1:-1])} instead')
+                        f'columns, got {len(row[1:-1])} instead\n'
+                        f'(this error might mean that there may be some'
+                        f' additional problems in the input file)')
 
             lines = lines[matrix_size:]
 
@@ -710,10 +716,9 @@ if __name__ == '__main__':
     # ================================
     # Tour related
     # ================================
-    z_0 = None
+    best_cost = None
     current_tour = []
     best_tour = []
-    best_cost = -1
 
     # ================================
     # Iteration counter
