@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import time
 from os import path
 
@@ -11,10 +12,8 @@ global DEBUG, INPUT_FILE, \
     best_cost, current_tour, best_tour, \
     iterations
 
-# choose for verbose output (every step annotated)
-DEBUG = True
-
-INPUT_FILE = 'input.txt'
+DEBUG = False
+INPUT_FILE = None
 
 
 # ==============================================================
@@ -620,8 +619,36 @@ def block_11():
 # ==============================================================
 
 if __name__ == '__main__':
+
     # ==============================================
-    # Get input
+    # Parse arguments
+    # ==============================================
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("input_file",
+                        help="echo the string you use here")
+
+    parser.add_argument("-d", "--debug",
+                        action="store_true",
+                        help="run in explicit (visual) debug "
+                             "mode, every step annotated")
+
+    parser.add_argument("-o", "--output",
+                        action="store_true",
+                        help="a file to write output to")
+
+    args = parser.parse_args()
+
+    INPUT_FILE = args.input_file
+
+    if not path.exists(INPUT_FILE):
+        raise ValueError(f'File "{INPUT_FILE}" does not exist')
+
+    DEBUG = args.debug
+
+    # ==============================================
+    # Read input file
     # ==============================================
 
     # distance (between points) matrix 'C',
@@ -690,7 +717,7 @@ if __name__ == '__main__':
             lines = lines[matrix_size:]
 
     # ==============================================
-    # Setting up variables
+    # Set up variables
     # ==============================================
 
     # ================================
