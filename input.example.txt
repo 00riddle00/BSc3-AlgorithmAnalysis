@@ -39,6 +39,7 @@
 # Distances between cities in Lithuania.
 # URL=<http://www.lidata.eu/en/index.php?file=files/mokymai/stat/stat.html&course_file=stat_III_10_1.html>
 # [accessed on 2021-05-28]
+# Cost = 1370
 # ========================================================================================================
 
 @names

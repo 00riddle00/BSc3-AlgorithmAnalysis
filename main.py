@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 import argparse
+import sys
 import time
 from os import path
 
 # ===============================================
 # Global variables
 # ===============================================
-global DEBUG, INPUT_FILE, \
+global DEBUG, INPUT_FILE, OUTPUT_FILE, \
     C, C_prime, row_map, col_map, i_from, j_to, max_Dij, \
     X, Y, Y_bar, candidate_nodes, \
     best_cost, current_tour, best_tour, \
@@ -14,6 +15,7 @@ global DEBUG, INPUT_FILE, \
 
 DEBUG = False
 INPUT_FILE = None
+OUTPUT_FILE = None
 
 
 # ==============================================================
@@ -626,26 +628,24 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("input_file",
-                        help="echo the string you use here")
+    parser.add_argument('input_file',
+                        help='a file to get input from')
 
-    parser.add_argument("-d", "--debug",
-                        action="store_true",
-                        help="run in explicit (visual) debug "
-                             "mode, every step annotated")
+    parser.add_argument('-d', '--debug',
+                        action='store_true',
+                        help='run in explicit (visual) debug '
+                             'mode, every step annotated')
 
-    parser.add_argument("-o", "--output",
-                        action="store_true",
+    parser.add_argument("-o", "--output_file",
                         help="a file to write output to")
 
     args = parser.parse_args()
 
     INPUT_FILE = args.input_file
-
-    if not path.exists(INPUT_FILE):
-        raise ValueError(f'File "{INPUT_FILE}" does not exist')
-
     DEBUG = args.debug
+
+    if args.output_file:
+        sys.stdout = open(args.output_file, 'a')
 
     # ==============================================
     # Read input file
@@ -664,9 +664,6 @@ if __name__ == '__main__':
     #
     # see input.example.txt file for input
     # format requirements
-    #
-    if not path.exists(INPUT_FILE):
-        raise ValueError(f'File "{INPUT_FILE}" does not exist')
 
     with open(INPUT_FILE) as input_file:
 
