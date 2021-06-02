@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import random
 import sys
 import time
 
@@ -653,7 +654,6 @@ if __name__ == '__main__':
                              'values of weights. Minimum value is 2')
 
     parser.add_argument('-r', '--random_seed',
-                        nargs=1,
                         type=int,
                         help='[randomize input]: set random seed for possible repetition')
 
@@ -715,8 +715,22 @@ if __name__ == '__main__':
     names = {}
 
     if not args.input_file:
-        # todo populate C with random data
-        pass
+        print(args.random_seed)
+        if args.random_seed:
+            random.seed(args.random_seed)
+        else:
+            random.seed(0)
+
+        cities = args.cities
+        w_1 = 1
+        w_n = 100
+        if args.weights:
+            w_1 = args.weights[0]
+            w_n = args.weights[1]
+
+        for i in range(cities):
+            row = [random.randrange(w_1, w_n+1) for _ in range(cities)]
+            C.append(row)
     else:
         # ==============================================
         # Read input file
