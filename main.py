@@ -627,10 +627,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='This program solves travelling salesman problem '
                     '(TSP) using branch and bound algorithm',
-        usage='\n    main.py [-h] [-d] input_file [-o OUTPUT_FILE]\n'
+        usage='\n    main.py [-h] [-d] input_file [-o OUTPUT_FILE] [-s]\n'
               '\nusage for randomized input:'
-              '\n    main.py [-h] [-d] -c CITIES [-w MIN MAX] [-r RANDOM_SEED] [-o OUTPUT_FILE]\n'
-              '\nuse [-d] for visual (debug) mode, [-h] for help')
+              '\n    main.py [-h] [-d] -c CITIES [-w MIN MAX] [-r RANDOM_SEED] [-o OUTPUT_FILE] [-s]\n'
+              '\nuse [-d] for visual (debug) mode, [-h] for help, \n'
+              '    [-s] for non-verbose output (prints only time passed in seconds).')
 
     parser.add_argument('-d', '--debug',
                         action='store_true',
@@ -644,7 +645,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--cities',
                         type=int,
                         help='[randomize input]: number of cities '
-                             '(vertices). Minimum value is 2')
+                             '(vertices). minimum value is 2')
 
     parser.add_argument('-w', '--weights',
                         nargs=2,
@@ -660,6 +661,11 @@ if __name__ == '__main__':
 
     parser.add_argument('-o', '--output_file',
                         help='a file to write output to')
+
+    parser.add_argument('-s', '--silent',
+                        action='store_true',
+                        help='set non-verbose output '
+                             '(prints only time passed in seconds)')
 
     args = parser.parse_args()
 
@@ -881,8 +887,11 @@ if __name__ == '__main__':
 
             iterations += 1
 
-    print_solution()
-    print_names()
-
     end_time = time.time()
-    print('--- %s seconds ---' % (end_time - start_time))
+
+    if args.silent:
+        print('%s' % (end_time - start_time))
+    else:
+        print_solution()
+        print_names()
+        print('--- %s seconds ---' % (end_time - start_time))
