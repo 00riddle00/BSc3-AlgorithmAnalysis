@@ -626,13 +626,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='This program solves travelling salesman problem '
                     '(TSP) using branch and bound algorithm',
-        usage="\n    main.py input_file [-d] [-o OUTPUT_FILE]\n"
-              "\nusage for randomized input:"
-              "\n    main.py -c CITIES [-w MIN MAX] [-d] [-o OUTPUT_FILE]\n"
-              "\nuse [-d] for visual (debug) mode, [-h] for help")
+        usage='\n    main.py [-h] [-d] input_file [-o OUTPUT_FILE]\n'
+              '\nusage for randomized input:'
+              '\n    main.py [-h] [-d] -c CITIES [-w MIN MAX] [-r RANDOM_SEED] [-o OUTPUT_FILE]\n'
+              '\nuse [-d] for visual (debug) mode, [-h] for help')
+
+    parser.add_argument('-d', '--debug',
+                        action='store_true',
+                        help='run in explicit (visual) debug '
+                             'mode, with every step annotated')
 
     parser.add_argument('input_file',
-                        nargs="?",
+                        nargs='?',
                         help='a file to get input from')
 
     parser.add_argument('-c', '--cities',
@@ -647,13 +652,14 @@ if __name__ == '__main__':
                         help='[randomize input]: minimum and maximum '
                              'values of weights. Minimum value is 2')
 
-    parser.add_argument('-d', '--debug',
-                        action='store_true',
-                        help='run in explicit (visual) debug '
-                             'mode, with every step annotated')
+    parser.add_argument('-r', '--random_seed',
+                        nargs=1,
+                        type=int,
+                        help='[randomize input]: set random seed for possible repetition')
 
-    parser.add_argument("-o", "--output_file",
-                        help="a file to write output to")
+
+    parser.add_argument('-o', '--output_file',
+                        help='a file to write output to')
 
     args = parser.parse_args()
 
@@ -675,6 +681,10 @@ if __name__ == '__main__':
             print("main.py: error: argument -w/--weights: "
                   "can not be used when input file is specified")
             sys.exit()
+        elif args.random_seed:
+            print("main.py: error: argument -r/--random_seed: "
+                  "can not be used when input file is specified")
+            sys.exit()
     else:
         if not args.cities:
             print("main.py: error: argument -c/--cities: "
@@ -689,8 +699,11 @@ if __name__ == '__main__':
                   "the minimum number is 2")
             sys.exit()
         if args.weights:
-            if args.weights[0] < 1 or args.weights[1] <= 1 or \
-                    args.weights[1] < args.weights[0]:
+            if args.weights[0] < 1 or args.weights[1] < 1:
+                print("main.py: error: argument -w/--weights:"
+                      " Minimum weight value is 1")
+                sys.exit()
+            elif args.weights[1] < args.weights[0]:
                 print("main.py: error: argument -w/--weights:"
                       " incorrect weights interval")
                 sys.exit()
@@ -704,7 +717,6 @@ if __name__ == '__main__':
     if not args.input_file:
         # todo populate C with random data
         pass
-
     else:
         # ==============================================
         # Read input file
@@ -859,4 +871,4 @@ if __name__ == '__main__':
     print_names()
 
     end_time = time.time()
-    print("--- %s seconds ---" % (end_time - start_time))
+    print('--- %s seconds ---' % (end_time - start_time))
