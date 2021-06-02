@@ -623,15 +623,34 @@ if __name__ == '__main__':
     # Parse arguments
     # ==============================================
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description='This program solves travelling salesman problem '
+                    '(TSP) using branch and bound algorithm',
+        usage="\n    main.py input_file [-d] [-o OUTPUT_FILE]\n"
+              "\nusage for randomized input:"
+              "\n    main.py -c CITIES [-w MIN MAX] [-d] [-o OUTPUT_FILE]\n"
+              "\nuse [-d] for visual (debug) mode, [-h] for help")
 
     parser.add_argument('input_file',
+                        nargs="?",
                         help='a file to get input from')
+
+    parser.add_argument('-c', '--cities',
+                        type=int,
+                        help='[randomize input]: number of cities '
+                             '(vertices). Minimum value is 2')
+
+    parser.add_argument('-w', '--weights',
+                        nargs=2,
+                        type=int,
+                        metavar=('MIN', 'MAX'),
+                        help='[randomize input]: minimum and maximum '
+                             'values of weights. Minimum value is 2')
 
     parser.add_argument('-d', '--debug',
                         action='store_true',
                         help='run in explicit (visual) debug '
-                             'mode, every step annotated')
+                             'mode, with every step annotated')
 
     parser.add_argument("-o", "--output_file",
                         help="a file to write output to")
@@ -639,75 +658,116 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     DEBUG = args.debug
+    arg_count = len(sys.argv)
+
+    if arg_count == 1 or args.debug and arg_count == 2:
+        parser.print_usage()
+        sys.exit()
+
+    INPUT_FILE = args.input_file
+
+    if INPUT_FILE:
+        if args.cities:
+            print("main.py: error: argument -c/--cities: "
+                  "can not be used when input file is specified")
+            sys.exit()
+        elif args.weights:
+            print("main.py: error: argument -w/--weights: "
+                  "can not be used when input file is specified")
+            sys.exit()
+    else:
+        if not args.cities:
+            print("main.py: error: argument -c/--cities: "
+                  "this argument is required, if no input file is specified")
+            sys.exit()
+        elif args.cities < 0:
+            print("main.py: error: argument -c/--cities: "
+                  "the number cannot be negative")
+            sys.exit()
+        elif args.cities <= 1:
+            print("main.py: error: argument -c/--cities: "
+                  "the minimum number is 2")
+            sys.exit()
+        if args.weights:
+            if args.weights[0] < 1 or args.weights[1] <= 1 or \
+                    args.weights[1] < args.weights[0]:
+                print("main.py: error: argument -w/--weights:"
+                      " incorrect weights interval")
+                sys.exit()
 
     if args.output_file:
         sys.stdout = open(args.output_file, 'a')
 
-    # ==============================================
-    # Read input file
-    # ==============================================
+    C = []
+    names = {}
 
-    # distance (between points) matrix 'C',
-    # which is read from INPUT_FILE:
-    #
-    #         col no.  1    2    3   ...   n
-    # row no.
-    #   1            (a_11 a_12 a_13 ... a_1n)
-    #   2            (a_21 a_22 a_23 ... a_2n)
-    #   3            (a_31 a_32 a_33 ... a_3n)
-    #  ...
-    #   n            (an_1 an_2 an_3 ... a_nn)
-    #
-    # see input.example.txt file for input
-    # format requirements
+    if not args.input_file:
+        # todo populate C with random data
+        pass
 
-    with open(args.input_file) as input_file:
+    else:
+        # ==============================================
+        # Read input file
+        # ==============================================
 
-        lines = []
-        names = {}
-        matrix_size = 0
-        C = []
+        # distance (between points) matrix 'C',
+        # which is read from INPUT_FILE:
+        #
+        #         col no.  1    2    3   ...   n
+        # row no.
+        #   1            (a_11 a_12 a_13 ... a_1n)
+        #   2            (a_21 a_22 a_23 ... a_2n)
+        #   3            (a_31 a_32 a_33 ... a_3n)
+        #  ...
+        #   n            (an_1 an_2 an_3 ... a_nn)
+        #
+        # see input.example.txt file for input
+        # format requirements
+        with open(args.input_file) as input_file:
 
-        for line in input_file.readlines():
-            if line != '\n' and not line.startswith('#'):
-                lines.append(line.split())
+            lines = []
+            matrix_size = 0
 
-        # this fixes a weird bug with trailing
-        # newlines in the input file
-        for line in lines:
-            pass
+            for line in input_file.readlines():
+                if line != '\n' and not line.startswith('#'):
+                    lines.append(line.split())
 
-        if lines[0][0] == '@names':
-            for i, line in enumerate(lines[1:], 1):
-                if line[0] == '\n' or line[0].startswith('['):
-                    if not matrix_size:
-                        matrix_size = i - 1
-                    elif matrix_size != i - 1:
+            # this fixes a weird bug with trailing
+            # newlines in the input file
+            for line in lines:
+                pass
+
+            if lines[0][0] == '@names':
+                for i, line in enumerate(lines[1:], 1):
+                    if line[0] == '\n' or line[0].startswith('['):
+                        if not matrix_size:
+                            matrix_size = i - 1
+                        elif matrix_size != i - 1:
+                            raise ValueError(
+                                f'there should be a total of {matrix_size} '
+                                f'names, got {i - 1} instead')
+                        break
+                    else:
+                        names[i] = line[0]
+
+                lines = lines[matrix_size + 1:]
+
+            if lines[0][0].startswith('['):
+                if not matrix_size:
+                    matrix_size = len(lines[0][1:-1])
+                for i, row in enumerate(lines, 1):
+                    if line[0] == '\n' or line[0].startswith('@'):
+                        break
+                    elif len(row[1:-1]) == matrix_size:
+                        C.append([int(el) for el in row[1:-1]])
+                    else:
                         raise ValueError(
-                            f'there should be a total of {matrix_size} '
-                            f'names, got {i - 1} instead')
-                    break
-                else:
-                    names[i] = line[0]
+                            f'matrix at row {i} should have {matrix_size} '
+                            f'columns, got {len(row[1:-1])} instead\n'
+                            f'(this error might mean that there may be some'
+                            f' additional problems in the input file)')
 
-            lines = lines[matrix_size + 1:]
-
-        if lines[0][0].startswith('['):
-            if not matrix_size:
-                matrix_size = len(lines[0][1:-1])
-            for i, row in enumerate(lines, 1):
-                if line[0] == '\n' or line[0].startswith('@'):
-                    break
-                elif len(row[1:-1]) == matrix_size:
-                    C.append([int(el) for el in row[1:-1]])
-                else:
-                    raise ValueError(
-                        f'matrix at row {i} should have {matrix_size} '
-                        f'columns, got {len(row[1:-1])} instead\n'
-                        f'(this error might mean that there may be some'
-                        f' additional problems in the input file)')
-
-            lines = lines[matrix_size:]
+                lines = lines[matrix_size:]
 
     # ==============================================
     # Set up variables
