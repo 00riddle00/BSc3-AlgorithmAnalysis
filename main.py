@@ -4,20 +4,20 @@ import random
 import sys
 import time
 
-# ===============================================
+# ==============================================================
 # Global variables
-# ===============================================
+# ==============================================================
 global DEBUG, \
     C, C_prime, row_map, col_map, i_from, j_to, max_Dij, \
     X, Y, Y_bar, candidate_nodes, \
-    best_cost, current_tour, best_tour, \
+    current_tour, best_tour, best_cost, \
     iterations
 
 DEBUG = False
 
 
 # ==============================================================
-# Debug functions
+# DEBUG printing functions
 # ==============================================================
 
 def debug(text):
@@ -40,14 +40,66 @@ def debug_block_name(block_no):
         print('=========================\n')
 
 
-# ===============================================
-# Utility functions
-# ===============================================
+# ==============================================================
+# Functions checking for correctness
+# ==============================================================
+def check_tour(tour, check_len=True, flatten=False):
+    global C
+    if flatten:
+        tour = [city for sublist in tour for city in sublist]
 
-# =======================================
-# Functions which do not change program
-# variables
-# =======================================
+    assert len(tour) == len(set(tour)), \
+        'There are repeated vertices in the current tour'
+    if check_len:
+        assert len(tour) == len(C), \
+            'The tour is shorter than the number of cities'
+
+
+# ==============================================================
+# Utility classes
+# ==============================================================
+
+# Node of the binary tree
+class Node:
+
+    def __init__(self, parent, path, bound=None):
+        self.parent = parent
+        self.path = path
+        self.left_child = None
+        self.right_child = None
+        self.bound = bound
+
+
+class CandidateNodes:
+    nodelist = []
+    size = 0
+
+    def add(self, node):
+        for i in range(self.size):
+            if node.bound <= self.nodelist[i].bound:
+                self.nodelist.insert(i, node)
+                self.size += 1
+                return
+
+        self.nodelist.append(node)
+        self.size += 1
+
+    def get(self):
+        return self.nodelist[0]
+
+    def pop(self):
+        self.nodelist = self.nodelist[1:]
+        self.size -= 1
+
+
+# ==============================================================
+# Utility functions
+# ==============================================================
+
+# --------------------------------------------------
+# Utility functions which do not use main
+# program variables
+# --------------------------------------------------
 
 # convert one-indexed to zero-indexed
 # ind = index
@@ -64,7 +116,11 @@ def print_M(matrix_name, M):
 
 # find minimum ignoring None values
 def min_no_none(row):
-    return min([x for x in row if (x is not None)])
+    row_no_none = [x for x in row if (x is not None)]
+    if row_no_none:
+        return min(row_no_none)
+    else:
+        return 0
 
 
 # find minimum ignoring one element
@@ -110,9 +166,44 @@ def simplify(M):
     return M, sum_subtrahends
 
 
-# =======================================
-# Functions using program variables
-# =======================================
+def find_max_D_ij(M):
+    _max_D_ij = 0
+    paths = []
+
+    M_T = transpose(M)
+
+    for i, row in enumerate(M, 1):
+        for j, el in enumerate(row, 1):
+            if el == 0:
+                # i-th row and j-th column element is zero
+                # hence there is no path i -> j, meaning there are
+                # such paths 1 -> k and l -> 2 where k != 2 and l != 1.
+                #
+                # For every such path their bound will increase by
+                # the size D[i,j] =
+                #   min(i-th row without j-th element) +
+                #   min(j-th column without i-th element)
+                D_ij = \
+                    min_no_element(M[ind(i)], ind(j)) + \
+                    min_no_element(M_T[ind(j)], ind(i))
+
+                if D_ij == _max_D_ij:
+                    paths.append([row_map[ind(i)], col_map[ind(j)]])
+                elif D_ij > _max_D_ij:
+                    _max_D_ij = D_ij
+                    paths = [[row_map[ind(i)], col_map[ind(j)]]]
+
+    if not paths:
+        raise Exception(
+            f'Something went wrong, no further possible paths '
+            f'were found, the algorithm got stuck')
+
+    return paths, _max_D_ij
+
+
+# --------------------------------------------------
+# Utilify functions which use main program variables
+# --------------------------------------------------
 
 def print_names():
     global best_tour, names
@@ -125,7 +216,7 @@ def print_names():
 def print_solution():
     global best_tour, best_cost
     print('=========================')
-    print(f'Solution:')
+    print(f'Solution (size = {len(C)})')
     print('=========================\n')
     for v in best_tour:
         print(f'{v} ->', end=' ')
@@ -133,10 +224,14 @@ def print_solution():
     print(f'\nCost = {best_cost}\n')
 
 
-# =======================================
-# Functions changing program variables
-# =======================================
+# --------------------------------------------------
+# Utility functions which use and change main
+# program variables
+# --------------------------------------------------
 
+# -----------------------------
+# For matrix operations
+# -----------------------------
 def reset_C_prime():
     global C_prime
     C_prime = [row[:] for row in C]
@@ -182,8 +277,87 @@ def disable_path(i_row, j_col):
         C_prime[row_map.index(i_row)][col_map.index(j_col)] = None
 
 
+# -----------------------------
+# For adding a new path
+# -----------------------------
+def added_path_merge_on_i_from(s_index):
+    global current_tour, j_to
+
+    for s2_index, sublist_2 in enumerate(current_tour):
+        if sublist_2[0] == j_to:
+            current_tour[s_index] = current_tour[s_index] + sublist_2[1:]
+            del (current_tour[s2_index])
+            return True
+    return False
+
+
+def added_path_merge_on_j_to(s_index):
+    global current_tour, i_from
+
+    for s2_index, sublist_2 in enumerate(current_tour):
+        if sublist_2[-1] == i_from:
+            current_tour[s_index] = sublist_2[:-1] + current_tour[s_index]
+            del (current_tour[s2_index])
+            return True
+    return False
+
+
+def add_path_already_have_i_from(s_index, sublist):
+    global current_tour, j_to
+
+    if sublist[0] == j_to:
+        return False
+    else:
+        current_tour[s_index].append(j_to)
+
+        if added_path_merge_on_i_from(s_index):
+            return True
+
+        return True
+
+
+def add_path_already_have_j_to(s_index, sublist):
+    global current_tour, i_from
+
+    if sublist[-1] == i_from:
+        return False
+    else:
+        current_tour[s_index].insert(0, i_from)
+
+        if added_path_merge_on_j_to(s_index):
+            return True
+
+        return True
+
+
+def try_add_this_path():
+    global current_tour, i_from, j_to
+
+    for s_index, sublist in enumerate(current_tour):
+        if i_from == sublist[-1]:
+            return add_path_already_have_i_from(s_index, sublist)
+        elif j_to == sublist[0]:
+            return add_path_already_have_j_to(s_index, sublist)
+
+    current_tour.append([i_from, j_to])
+    return True
+
+
+def add_path(possible_paths):
+    global i_from, j_to
+
+    for path in possible_paths:
+        i_from = path[0]
+        j_to = path[1]
+
+        if try_add_this_path():
+            return True
+
+    return False
+
+
 # ==============================================================
-# Functions for blocks with debug possibility
+# Main program functions: blocks wrapped in DEBUG mode
 # ==============================================================
 
 def debug_block_1():
@@ -204,8 +378,8 @@ def debug_block_3():
     debug_block_name(3)
     block_3()
     debug(f'Child vertices: '
-          f'Y_bar = ("{Y_bar.path[0]},{Y_bar.path[0]}"), '
-          f'Y = ("{Y.path[0]},{Y.path[0]}")')
+          f'Y_bar = ("{Y_bar.path[0]},{Y_bar.path[1]}"), '
+          f'Y = ("{Y.path[0]},{Y.path[1]}")')
     debug(f'from: i = {i_from}, to: j = {j_to}')
     debug(f'max_Dij = {max_Dij}\n')
 
@@ -267,7 +441,7 @@ def debug_block_10():
     is_no_better_path = block_10()
 
     if is_no_better_path:
-        debug('The current chosen vertex does not contain the better tour '
+        debug('The next chosen vertex does not contain the better tour '
               'than we already have. The algorithm stops here.\n')
     else:
         best_tour_bound = 'infinity'
@@ -275,7 +449,7 @@ def debug_block_10():
             best_tour_bound = f'{best_cost}'
 
         debug(
-            f'The current chosen vertex has a lower bound (= {X.bound}) than '
+            f'The next chosen vertex has a lower bound (= {X.bound}) than '
             f'the current best tour (bound = {best_tour_bound}).')
         debug('Hence the algorithm proceeds.\n')
 
@@ -303,53 +477,16 @@ def debug_block_11():
 
 
 # ==============================================================
-# Solution tree implementation
+# Main program functions: blocks
 # ==============================================================
 
-class Node:
-
-    def __init__(self, parent, path, bound=None):
-        self.parent = parent
-        self.path = path
-        self.left_child = None
-        self.right_child = None
-        self.bound = bound
-
-
-class CandidateNodes:
-    nodelist = []
-    size = 0
-
-    def add(self, node):
-        for i in range(self.size):
-            if node.bound <= self.nodelist[i].bound:
-                self.nodelist.insert(i, node)
-                self.size += 1
-                return
-
-        self.nodelist.append(node)
-        self.size += 1
-
-    def get(self):
-        return self.nodelist[0]
-
-    def pop(self):
-        self.nodelist = self.nodelist[1:]
-        self.size -= 1
-
-
-# ==============================================================
-# Main program blocks
-# ==============================================================
-
-# ===============================================
+# --------------------------------------------------
 # Block 1: Input data
-# ===============================================
+# --------------------------------------------------
 
 def block_1():
     global C
-    # convert zeroes to infinity (=None)
-    # let x mean a single element in a row
+    # convert 0s to None, meaning INF
     C_tmp = []
     for row in C:
         C_tmp.append([None if x == 0 else x for x in row])
@@ -357,10 +494,10 @@ def block_1():
     C = C_tmp
 
 
-# ===============================================
+# --------------------------------------------------
 # Block 2: Matrix simplification and finding the
 #          bound of the root vertex
-# ===============================================
+# --------------------------------------------------
 
 def block_2():
     global X, C, C_prime, row_map, col_map
@@ -370,48 +507,42 @@ def block_2():
     X = Node(None, (None, None), bound=bound_root)
 
 
-# ===============================================
+# --------------------------------------------------
 # Block 3: Choosing the next vertex "(i,j)" for
 #          branching
-# ===============================================
+# --------------------------------------------------
 
 def block_3():
-    global Y, Y_bar, C_prime, i_from, j_to, max_Dij
+    global Y, Y_bar, C_prime, i_from, j_to, max_Dij, current_tour
 
     # reset these variables
-    Y = [(0, 0), None, None, None, False]
-    Y_bar = [(-0, -0), None, None, None, False]
-
     i_from = None
     j_to = None
     max_Dij = None
 
     # calculate the change of bound for all
     # elements in the matrix whose value is 0
-    C_prime_T = transpose(C_prime)
-    max_Dij = 0
+    possible_paths, max_Dij = find_max_D_ij(C_prime)
 
-    for i, row in enumerate(C_prime, 1):
-        for j, el in enumerate(row, 1):
-            if el == 0:
-                # i-th row and j-th column element is zero
-                # hence there is no path i -> j, meaning there are
-                # such paths 1 -> k and l -> 2 where k != 2 and l != 1.
-                #
-                # For every such path their bound will increase by
-                # the size D[i,j] =
-                #   min(i-th row without j-th element) +
-                #   min(j-th column without i-th element)
-                D_ij = \
-                    min_no_element(C_prime[ind(i)], ind(j)) + \
-                    min_no_element(C_prime_T[ind(j)], ind(i))
-                # if there are more than one maximum value,
-                # we choose the first one encountered as maximum
+    i_from = possible_paths[0][0]
+    j_to = possible_paths[0][1]
 
-                if D_ij > max_Dij:
-                    max_Dij = D_ij
-                    i_from = row_map[ind(i)]
-                    j_to = col_map[ind(j)]
+    if not current_tour:
+        current_tour.append([i_from, j_to])
+    else:
+        while not add_path(possible_paths):
+            C_prime[row_map.index(i_from)][col_map.index(j_to)] = None
+
+            i_from = None
+            j_to = None
+            max_Dij = 0
+
+            possible_paths, max_Dij = find_max_D_ij(C_prime)
+
+            i_from = possible_paths[0][0]
+            j_to = possible_paths[0][1]
+
+    check_tour(current_tour, check_len=False, flatten=True)
 
     Y_bar = Node(X, (-i_from, -j_to))
     Y = Node(X, (i_from, j_to))
@@ -420,10 +551,10 @@ def block_3():
     X.right_child = Y
 
 
-# ===============================================
+# --------------------------------------------------
 # Block 4: Branching - finding the bound of the
 #          vertex "(i,j)_bar"
-# ===============================================
+# --------------------------------------------------
 
 def block_4():
     global max_Dij, candidate_nodes
@@ -433,10 +564,10 @@ def block_4():
     candidate_nodes.add(Y_bar)
 
 
-# ===============================================
+# --------------------------------------------------
 # Block 5: Branching - finding the bound of
 #          the vertex "(i,j)"
-# ===============================================
+# --------------------------------------------------
 
 def block_5():
     global X, Y, C_prime
@@ -451,9 +582,9 @@ def block_5():
     X = None
 
 
-# ===============================================
+# --------------------------------------------------
 # Block 6: Is the distance matrix small enough?
-# ===============================================
+# --------------------------------------------------
 
 # check matrix dimensions
 def block_6():
@@ -461,66 +592,59 @@ def block_6():
     return len(C_prime) == 2
 
 
-# ===============================================
+# --------------------------------------------------
 # Block 7: Exhaustive estimation of the remaining
 #          matrix
-# ===============================================
+# --------------------------------------------------
 
 def block_7():
-    global current_tour, C
+    global C, current_tour
 
-    paths = []
-
-    row_from = 0
-    col_to = 0
-
-    if (C_prime[0][0] is None) or \
-            (C_prime[0][1] is not None and C_prime[0][0] > C_prime[0][1]):
-        col_to = 1
-
-    i_from = row_map[row_from]
-    j_to = col_map[col_to]
-
-    paths.append([i_from, j_to])
-
-    row_from = 1
-    col_to = (col_to + 1) % 2
-
-    i_from = row_map[row_from]
-    j_to = col_map[col_to]
-
-    paths.insert(0, [i_from, j_to])
-
-    # traversing the tree
-    node = Y
-
-    while node.parent is not None:
-        is_bar_vertex = node.path[0] < 0
-
-        if not is_bar_vertex:
-            paths.append([node.path[0], node.path[1]])
-
-        node = node.parent
-
-    current_tour = []
     cost = 0
 
-    start_el = 1
-    while paths:
-        for i, path in enumerate(paths):
-            if path[0] == start_el:
-                cost += C[ind(path[0])][ind(path[1])]
-                current_tour.append(start_el)
-                start_el = path[1]
-                paths.pop(i)
+    if len(current_tour) == 2:
+        paths = current_tour[0] + current_tour[1]
+    elif len(current_tour) == 1:
+        possible_paths_pair_1 = [[row_map[0], col_map[0]],
+                                 [row_map[1], col_map[1]]]
 
+        possible_paths_pair_2 = [[row_map[0], col_map[1]],
+                                 [row_map[1], col_map[0]]]
+
+        current = current_tour.copy()
+
+        path_added = add_path(possible_paths_pair_1)
+
+        if not path_added or len(current_tour) > 1:
+            current_tour = current
+
+            path_added = add_path(possible_paths_pair_2)
+
+            if not path_added:
+                raise Exception(
+                    f'Something went wrong, no path was not added '
+                    f'at the last stage, when matrix size is 2x2\n')
+
+        paths = current_tour[0]
+    else:
+        raise Exception(
+            f'Something went wrong, there should only be 1 or 2 sublists'
+            f' at the end when matrix size is 2x2, got {len(current_tour)}')
+
+    check_tour(paths)
+
+    for i in range(len(paths[:-1])):
+        cost += C[ind(paths[i])][ind(paths[i + 1])]
+    cost += C[ind(paths[-1])][ind(paths[0])]
+
+    current_tour = paths
     Y.bound = cost
 
 
-# ===============================================
+# --------------------------------------------------
 # Block 8: Is bound_Y_last < best_cost? If yes, save
 #          the current tour as the best so far
-# ===============================================
+# --------------------------------------------------
 
 def block_8():
     global best_cost, current_tour, best_tour
@@ -530,9 +654,9 @@ def block_8():
         best_tour = current_tour
 
 
-# ===============================================
+# --------------------------------------------------
 # Block 9: Choose the next vertex
-# ===============================================
+# --------------------------------------------------
 
 def block_9():
     global X, Y, C_prime, candidate_nodes
@@ -547,9 +671,9 @@ def block_9():
             candidate_nodes.add(Y)
 
 
-# ===============================================
+# --------------------------------------------------
 # Block 10: Do we have the best tour already?
-# ===============================================
+# --------------------------------------------------
 
 def block_10():
     global best_cost
@@ -559,12 +683,12 @@ def block_10():
         return False
 
 
-# ===============================================
+# --------------------------------------------------
 # Block 11: Correct matrix for current vertex X
-# ===============================================
+# --------------------------------------------------
 
 def block_11():
-    global C, C_prime
+    global C, C_prime, current_tour
 
     # Is the next chosen vertex X the same as
     # the curent vertex Y?
@@ -573,10 +697,13 @@ def block_11():
         # that we need
         return True
 
+    reset_C_prime()
+    current_tour = []
+
     # traversing the tree
+    node = X
     included_paths = []
     excluded_paths = []
-    node = X
 
     while node.parent is not None:
         is_bar_vertex = node.path[0] < 0
@@ -588,8 +715,6 @@ def block_11():
 
         node = node.parent
 
-    reset_C_prime()
-
     for path in excluded_paths:
         i_from = -path[0]
         j_to = -path[1]
@@ -598,8 +723,18 @@ def block_11():
     cost_included_paths = 0
 
     for path in included_paths:
+
         i_from = path[0]
         j_to = path[1]
+
+        if not current_tour:
+            current_tour.append([i_from, j_to])
+        else:
+
+            path_added = add_path([[path[0], path[1]]])
+            if not path_added:
+                raise Exception(
+                    f'Something went wrong, no path was added\n')
 
         cost_included_paths += C[ind(i_from)][ind(j_to)]
 
@@ -615,15 +750,12 @@ def block_11():
 
 
 # ==============================================================
-# Main code
+# Main program: code
 # ==============================================================
-
 if __name__ == '__main__':
-
-    # ==============================================
+    # --------------------------------------------------
     # Parse arguments
-    # ==============================================
-
+    # --------------------------------------------------
     parser = argparse.ArgumentParser(
         description='This program solves travelling salesman problem '
                     '(TSP) using branch and bound algorithm',
@@ -645,19 +777,18 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--cities',
                         type=int,
                         help='[randomize input]: number of cities '
-                             '(vertices). minimum value is 2')
+                             '(vertices). Minimum value is 3')
 
     parser.add_argument('-w', '--weights',
                         nargs=2,
                         type=int,
                         metavar=('MIN', 'MAX'),
                         help='[randomize input]: minimum and maximum '
-                             'values of weights. Minimum value is 2')
+                             'values of weights. Minimum value is 1')
 
     parser.add_argument('-r', '--random_seed',
                         type=int,
                         help='[randomize input]: set random seed for possible repetition')
-
 
     parser.add_argument('-o', '--output_file',
                         help='a file to write output to')
@@ -700,9 +831,9 @@ if __name__ == '__main__':
             print("main.py: error: argument -c/--cities: "
                   "the number cannot be negative")
             sys.exit()
-        elif args.cities <= 1:
+        elif args.cities < 3:
             print("main.py: error: argument -c/--cities: "
-                  "the minimum number is 2")
+                  "the minimum number is 3")
             sys.exit()
         if args.weights:
             if args.weights[0] < 1 or args.weights[1] < 1:
@@ -721,7 +852,6 @@ if __name__ == '__main__':
     names = {}
 
     if not args.input_file:
-        print(args.random_seed)
         if args.random_seed:
             random.seed(args.random_seed)
         else:
@@ -729,32 +859,31 @@ if __name__ == '__main__':
 
         cities = args.cities
         w_1 = 1
-        w_n = 100
+        w_n = 10
         if args.weights:
             w_1 = args.weights[0]
             w_n = args.weights[1]
 
         for i in range(cities):
-            row = [random.randrange(w_1, w_n+1) for _ in range(cities)]
+            row = [random.randrange(w_1, w_n + 1) for _ in range(cities)]
+            row[i] = 0
             C.append(row)
     else:
-        # ==============================================
+        # --------------------------------------------------
         # Read input file
-        # ==============================================
+        # --------------------------------------------------
 
-        # distance (between points) matrix 'C',
-        # which is read from INPUT_FILE:
+        # Square distance matrix 'C' (between points),
+        # which is read from the input file:
         #
-        #         col no.  1    2    3   ...   n
-        # row no.
-        #   1            (a_11 a_12 a_13 ... a_1n)
-        #   2            (a_21 a_22 a_23 ... a_2n)
-        #   3            (a_31 a_32 a_33 ... a_3n)
+        #              columns:
+        # rows:     1    2   ...  n
+        #   1     (a_11 a_12 ... a_1n)
+        #   2     (a_21 a_22 ... a_2n)
         #  ...
-        #   n            (an_1 an_2 an_3 ... a_nn)
+        #   n     (an_1 an_2 ... a_nn)
         #
-        # see input.example.txt file for input
-        # format requirements
+        # see input.example.txt file for input format
         with open(args.input_file) as input_file:
 
             lines = []
@@ -801,13 +930,13 @@ if __name__ == '__main__':
 
                 lines = lines[matrix_size:]
 
-    # ==============================================
+    # --------------------------------------------------
     # Set up variables
-    # ==============================================
+    # --------------------------------------------------
 
-    # ================================
+    # -----------------------------
     # Matrix related
-    # ================================
+    # -----------------------------
     C_prime = None
 
     row_map = []
@@ -817,33 +946,33 @@ if __name__ == '__main__':
     j_to = None
     max_Dij = None
 
-    # ================================
+    # -----------------------------
     # Tree related
-    # ================================
+    # -----------------------------
     X = None
     Y = None
     Y_bar = None
     candidate_nodes = CandidateNodes()
 
-    # ================================
+    # -----------------------------
     # Tour related
-    # ================================
-    best_cost = None
+    # -----------------------------
     current_tour = []
     best_tour = []
+    best_cost = None
 
-    # ================================
+    # -----------------------------
     # Iteration counter
-    # ================================
+    # -----------------------------
     iterations = 1
 
-    # ==============================================
-    # Main loop
-    # ==============================================
-
-    start_time = time.time()
+    # --------------------------------------------------
+    # Main loop (DEBUG mode)
+    # --------------------------------------------------
 
     if DEBUG:
+        start_time = time.time()
+
         debug_block_1()
         debug_block_2()
 
@@ -865,7 +994,19 @@ if __name__ == '__main__':
 
             iterations += 1
 
+        end_time = time.time()
+
+        check_tour(best_tour)
+        print_solution()
+        print(f'--------- {iterations} iterations -----------')
+        print(f'--- {end_time - start_time} seconds ---')
+
+    # --------------------------------------------------
+    # Main loop (normal mode)
+    # --------------------------------------------------
     else:
+        start_time = time.time()
+
         block_1()
         block_2()
 
@@ -887,11 +1028,13 @@ if __name__ == '__main__':
 
             iterations += 1
 
-    end_time = time.time()
+        end_time = time.time()
 
-    if args.silent:
-        print('%s' % (end_time - start_time))
-    else:
-        print_solution()
-        print_names()
-        print('--- %s seconds ---' % (end_time - start_time))
+        if args.silent:
+            print('%s' % (end_time - start_time))
+        else:
+            check_tour(best_tour)
+            print_solution()
+            print(f'--------- {iterations} iterations -----------')
+            print(f'--- {end_time - start_time} seconds ---')
+            print(150 * '-')
