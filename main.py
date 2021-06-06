@@ -772,7 +772,6 @@ def block_11():
     # traversing the tree
     node = X
     cost_included_paths = 0
-    included_paths = []
 
     while node.parent is not None:
 
@@ -780,7 +779,8 @@ def block_11():
         j_to = node.path[1]
 
         if i_from < 0 and j_to < 0:
-            C_prime[row_map.index(-i_from)][col_map.index(-j_to)] = None
+            if -i_from in row_map and -j_to in col_map:
+                C_prime[row_map.index(-i_from)][col_map.index(-j_to)] = None
         else:
             if not current_tour:
                 current_tour.append([i_from, j_to])
@@ -792,16 +792,10 @@ def block_11():
 
             cost_included_paths += C[ind(i_from)][ind(j_to)]
 
-            included_paths.append(node.path)
+            delete_row_col(i_from, j_to)
+            disable_path(j_to, i_from)
 
         node = node.parent
-
-    for path in included_paths:
-        i_from = path[0]
-        j_to = path[1]
-
-        delete_row_col(i_from, j_to)
-        disable_path(j_to, i_from)
 
     C_prime, sum_subtrahends = simplify(C_prime)
 
