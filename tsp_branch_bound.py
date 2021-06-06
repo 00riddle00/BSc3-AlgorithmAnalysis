@@ -824,13 +824,12 @@ if __name__ == '__main__':
     # Parse arguments
     # --------------------------------------------------
     parser = argparse.ArgumentParser(
-        description='This program solves travelling salesman problem '
-                    '(TSP) using branch and bound algorithm',
-        usage='\n    main.py [-h] [-d] input_file [-o OUTPUT_FILE] [-s]\n'
+        description='### This program solves travelling salesman problem '
+                    '(TSP) using branch and bound algorithm ###',
+        usage='\n    tsp_branch_bound.py input_file [-o OUTPUT_FILE] [-d/-s]\n'
               '\nusage for randomized input:'
-              '\n    main.py [-h] [-d] -c CITIES [-w MIN MAX] [-r RANDOM_SEED] [-o OUTPUT_FILE] [-s]\n'
-              '\nuse [-d] for visual (debug) mode, [-h] for help, \n'
-              '    [-s] for non-verbose output (prints only time passed in seconds).')
+              '\n    tsp_branch_bound.py -c CITIES [-w MIN MAX] [-r RANDOM_SEED] [-o OUTPUT_FILE] [-d/-s]\n'
+              '\nTry tsp_branch_bound.py --help for more information.')
 
     parser.add_argument('-d', '--debug',
                         action='store_true',
@@ -878,42 +877,42 @@ if __name__ == '__main__':
 
     if INPUT_FILE:
         if args.cities:
-            print("main.py: error: argument -c/--cities: "
+            print("tsp_branch_bound.py: error: argument -c/--cities: "
                   "can not be used when input file is specified")
             sys.exit()
         elif args.weights:
-            print("main.py: error: argument -w/--weights: "
+            print("tsp_branch_bound.py: error: argument -w/--weights: "
                   "can not be used when input file is specified")
             sys.exit()
         elif args.random_seed:
-            print("main.py: error: argument -r/--random_seed: "
+            print("tsp_branch_bound.py: error: argument -r/--random_seed: "
                   "can not be used when input file is specified")
             sys.exit()
     else:
         if not args.cities:
-            print("main.py: error: argument -c/--cities: "
+            print("tsp_branch_bound.py: error: argument -c/--cities: "
                   "this argument is required, if no input file is specified")
             sys.exit()
         elif args.cities < 0:
-            print("main.py: error: argument -c/--cities: "
+            print("tsp_branch_bound.py: error: argument -c/--cities: "
                   "the number cannot be negative")
             sys.exit()
         elif args.cities < 3:
-            print("main.py: error: argument -c/--cities: "
+            print("tsp_branch_bound.py: error: argument -c/--cities: "
                   "the minimum number is 3")
             sys.exit()
         if args.weights:
             if args.weights[0] < 1 or args.weights[1] < 1:
-                print("main.py: error: argument -w/--weights:"
+                print("tsp_branch_bound.py: error: argument -w/--weights:"
                       " Minimum weight value is 1")
                 sys.exit()
             elif args.weights[1] < args.weights[0]:
-                print("main.py: error: argument -w/--weights:"
+                print("tsp_branch_bound.py: error: argument -w/--weights:"
                       " incorrect weights interval")
                 sys.exit()
 
     if args.debug and args.silent:
-        print("main.py: error: argument -s/--silent: "
+        print("tsp_branch_bound.py: error: argument -s/--silent: "
               "can not be used with debug mode")
         sys.exit()
 
