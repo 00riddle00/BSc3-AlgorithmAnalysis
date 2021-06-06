@@ -202,11 +202,6 @@ def find_max_Dij(M):
                     _max_Dij = D_ij
                     paths = [[row_map[ind(i)], col_map[ind(j)]]]
 
-    if not paths:
-        raise Exception(
-            f'Something went wrong, no further possible paths '
-            f'were found, the algorithm got stuck')
-
     return paths, _max_Dij
 
 
@@ -233,6 +228,7 @@ def print_solution():
         print(f'{v} ->', end=' ')
     print(best_tour[0])
     print(f'\nCost = {best_cost}\n')
+    print_names()
 
 
 # --------------------------------------------------
@@ -402,12 +398,16 @@ def debug_block_3():
     global Y, Y_bar
 
     debug_block_name(3)
-    block_3()
+    new_path_added = block_3()
     debug(f'Child vertices: '
           f'Y_bar = ("{Y_bar.path[0]},{Y_bar.path[1]}"), '
           f'Y = ("{Y.path[0]},{Y.path[1]}")')
     debug(f'from: i = {i_from}, to: j = {j_to}')
     debug(f'max_Dij = {max_Dij}\n')
+    if new_path_added:
+        return True
+    else:
+        return False
 
 
 def debug_block_4():
@@ -451,7 +451,7 @@ def debug_block_7():
     debug_block_name(7)
     block_7()
     debug(f'Current tour: {current_tour}')
-    debug(f'Bound("Y_last") = {Y.bound}\n')
+    debug(f'Bound("Y_last") = {Y.bound} ( = cost of this tour)\n')
 
 
 def debug_block_8():
@@ -495,8 +495,8 @@ def debug_block_10():
             best_tour_bound = f'{best_cost}'
 
         debug(
-            f'The next chosen vertex has a lower bound (= {X.bound}) than '
-            f'the current best tour (bound = {best_tour_bound}).')
+            f'The next chosen vertex has a smaller lower bound (bound >= {X.bound}) than '
+            f'the cost of the current best tour (cost = {best_tour_bound}).')
         debug('Hence the algorithm proceeds.\n')
 
     return is_no_better_path
@@ -577,6 +577,9 @@ def block_3():
     # elements in the matrix whose value is 0
     possible_paths, max_Dij = find_max_Dij(C_prime)
 
+    if not possible_paths:
+        return False
+
     i_from = possible_paths[0][0]
     j_to = possible_paths[0][1]
 
@@ -586,6 +589,9 @@ def block_3():
         while not add_path(possible_paths):
             C_prime[row_map.index(i_from)][col_map.index(j_to)] = None
             possible_paths, max_Dij = find_max_Dij(C_prime)
+
+            if not possible_paths:
+                return False
 
             i_from = possible_paths[0][0]
             j_to = possible_paths[0][1]
@@ -597,6 +603,8 @@ def block_3():
 
     X.left_child = Y_bar
     X.right_child = Y
+
+    return True
 
 
 # --------------------------------------------------
@@ -1045,7 +1053,12 @@ if __name__ == '__main__':
         debug_block_2()
 
         while True:
-            debug_block_3()
+            if not debug_block_3():
+                Y = candidate_nodes.pop()
+                X = candidate_nodes.pop()
+                debug_block_11()
+                continue
+
             debug_block_4()
             debug_block_5()
 
@@ -1079,7 +1092,12 @@ if __name__ == '__main__':
         block_2()
 
         while True:
-            block_3()
+            if not block_3():
+                Y = candidate_nodes.pop()
+                X = candidate_nodes.pop()
+                block_11()
+                continue
+
             block_4()
             block_5()
 

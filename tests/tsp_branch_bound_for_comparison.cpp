@@ -264,7 +264,7 @@ int solve(int costMatrix[N][N])
 
 int main()
 {
-    // cost matrix for traveling salesman problem.
+    // cost matrix for travelling salesman problem.
     // change `N` constant to matrix size accordingly
     
     /*  Test 01
@@ -342,7 +342,7 @@ int main()
 
     /* Test 06
      *
-     * only one tour possible
+     * only one tour is possible here
      * cost = 15 
      * 1 -> 2 -> 3 -> 4 -> 5 -> 1 */
     /*
