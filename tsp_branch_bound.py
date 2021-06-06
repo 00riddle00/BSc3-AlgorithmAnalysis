@@ -494,9 +494,9 @@ def debug_block_10():
         if len(best_tour):
             best_tour_bound = f'{best_cost}'
 
-        debug(
-            f'The next chosen vertex has a smaller lower bound (bound >= {X.bound}) than '
-            f'the cost of the current best tour (cost = {best_tour_bound}).')
+        debug(f'The next chosen vertex has a smaller lower bound '
+              f'(bound >= {X.bound}) than the cost of the current '
+              f'best tour (cost = {best_tour_bound}).')
         debug('Hence the algorithm proceeds.\n')
 
     return is_no_better_path
@@ -828,7 +828,8 @@ if __name__ == '__main__':
                     '(TSP) using branch and bound algorithm ###',
         usage='\n    tsp_branch_bound.py input_file [-o OUTPUT_FILE] [-d/-s]\n'
               '\nusage for randomized input:'
-              '\n    tsp_branch_bound.py -c CITIES [-w MIN MAX] [-r RANDOM_SEED] [-o OUTPUT_FILE] [-d/-s]\n'
+              '\n    tsp_branch_bound.py -c CITIES [-w MIN MAX] '
+              '[-r RANDOM_SEED] [-o OUTPUT_FILE] [-d/-s]\n'
               '\nTry tsp_branch_bound.py --help for more information.')
 
     parser.add_argument('-d', '--debug',
@@ -850,11 +851,13 @@ if __name__ == '__main__':
                         type=int,
                         metavar=('MIN', 'MAX'),
                         help='[randomize input]: minimum and maximum '
-                             'values of weights. Minimum value is 1. Default interval: 1 10')
+                             'values of weights. Minimum value is 1. '
+                             'Default interval: 1 10')
 
     parser.add_argument('-r', '--random_seed',
                         type=int,
-                        help='[randomize input]: set random seed for possible repetition. Default value: 0')
+                        help='[randomize input]: set random seed for '
+                             'possible repetition. Default value: 0')
 
     parser.add_argument('-o', '--output_file',
                         help='a file to write output to')
