@@ -850,11 +850,11 @@ if __name__ == '__main__':
                         type=int,
                         metavar=('MIN', 'MAX'),
                         help='[randomize input]: minimum and maximum '
-                             'values of weights. Minimum value is 1')
+                             'values of weights. Minimum value is 1. Default interval: 1 10')
 
     parser.add_argument('-r', '--random_seed',
                         type=int,
-                        help='[randomize input]: set random seed for possible repetition')
+                        help='[randomize input]: set random seed for possible repetition. Default value: 0')
 
     parser.add_argument('-o', '--output_file',
                         help='a file to write output to')
