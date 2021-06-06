@@ -147,7 +147,6 @@ def transpose(M):
 def subtract_min(M):
     subs = 0
     for i, row in enumerate(M):
-        # min_x = min([x for x in row if x is not None])
         min_x = min_no_none(row)
         subs += min_x
         M[i] = [(x - min_x) if x is not None else None for x in row]
@@ -173,8 +172,8 @@ def simplify(M):
     return M, sum_subtrahends
 
 
-def find_max_D_ij(M):
-    _max_D_ij = 0
+def find_max_Dij(M):
+    _max_Dij = 0
     paths = []
 
     M_T = transpose(M)
@@ -194,10 +193,10 @@ def find_max_D_ij(M):
                     min_no_element(M[ind(i)], ind(j)) + \
                     min_no_element(M_T[ind(j)], ind(i))
 
-                if D_ij == _max_D_ij:
+                if D_ij == _max_Dij:
                     paths.append([row_map[ind(i)], col_map[ind(j)]])
-                elif D_ij > _max_D_ij:
-                    _max_D_ij = D_ij
+                elif D_ij > _max_Dij:
+                    _max_Dij = D_ij
                     paths = [[row_map[ind(i)], col_map[ind(j)]]]
 
     if not paths:
@@ -205,7 +204,7 @@ def find_max_D_ij(M):
             f'Something went wrong, no further possible paths '
             f'were found, the algorithm got stuck')
 
-    return paths, _max_D_ij
+    return paths, _max_Dij
 
 
 # --------------------------------------------------
@@ -566,14 +565,14 @@ def block_3():
     global X, Y, Y_bar
     global current_tour
 
-    # reset these variables
+    # reset these global variables
     i_from = None
     j_to = None
     max_Dij = None
 
     # calculate the change of bound for all
     # elements in the matrix whose value is 0
-    possible_paths, max_Dij = find_max_D_ij(C_prime)
+    possible_paths, max_Dij = find_max_Dij(C_prime)
 
     i_from = possible_paths[0][0]
     j_to = possible_paths[0][1]
@@ -584,11 +583,12 @@ def block_3():
         while not add_path(possible_paths):
             C_prime[row_map.index(i_from)][col_map.index(j_to)] = None
 
+            # reset these global variables
             i_from = None
             j_to = None
-            max_Dij = 0
+            max_Dij = None
 
-            possible_paths, max_Dij = find_max_D_ij(C_prime)
+            possible_paths, max_Dij = find_max_Dij(C_prime)
 
             i_from = possible_paths[0][0]
             j_to = possible_paths[0][1]
@@ -762,6 +762,7 @@ def block_11():
         # that we need
         return True
 
+    # reset these global variables
     reset_C_prime()
     current_tour = []
 
