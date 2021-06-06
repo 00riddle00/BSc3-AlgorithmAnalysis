@@ -5,15 +5,19 @@ import sys
 import time
 
 # ==============================================================
-# Global variables
+# Declare global variables
 # ==============================================================
-global DEBUG, \
-    C, C_prime, row_map, col_map, i_from, j_to, max_Dij, \
-    X, Y, Y_bar, candidate_nodes, \
-    current_tour, best_tour, best_cost, \
-    iterations
 
-DEBUG = False
+# Verbose (DEBUG) mode
+global DEBUG
+# Matrix related
+global C, C_prime, row_map, col_map, i_from, j_to, max_Dij
+# Tree related
+global X, Y, Y_bar, candidate_nodes
+# Tour related
+global current_tour, best_tour, best_cost, names
+# Iteration counter
+global iterations
 
 
 # ==============================================================
@@ -33,7 +37,9 @@ def debug_M(matrix_name, M):
 
 
 def debug_block_name(block_no):
-    global DEBUG, iterations
+    global DEBUG
+    global iterations
+
     if DEBUG:
         print('=========================')
         print(f'Block {block_no} (iteration {iterations})')
@@ -45,6 +51,7 @@ def debug_block_name(block_no):
 # ==============================================================
 def check_tour(tour, check_len=True, flatten=False):
     global C
+
     if flatten:
         tour = [city for sublist in tour for city in sublist]
 
@@ -207,6 +214,7 @@ def find_max_D_ij(M):
 
 def print_names():
     global best_tour, names
+
     if names:
         for v in best_tour:
             print(f'{names[v]} ->', end=' ')
@@ -215,6 +223,7 @@ def print_names():
 
 def print_solution():
     global best_tour, best_cost
+
     print('=========================')
     print(f'Solution (size = {len(C)})')
     print('=========================\n')
@@ -247,6 +256,7 @@ def reset_row_col_map():
 
 def delete_row_col(i_row, j_col):
     global C_prime
+
     # delete i-th row
     C_prime = \
         C_prime[:row_map.index(i_row)] + C_prime[(row_map.index(i_row) + 1):]
@@ -273,6 +283,7 @@ def fix_map_on_delete(row_from_map, col_from_map):
 
 def disable_path(i_row, j_col):
     global row_map, col_map
+
     if i_row in row_map and j_col in col_map:
         C_prime[row_map.index(i_row)][col_map.index(j_col)] = None
 
@@ -281,7 +292,8 @@ def disable_path(i_row, j_col):
 # For adding a new path
 # -----------------------------
 def added_path_merge_on_i_from(s_index):
-    global current_tour, j_to
+    global j_to
+    global current_tour
 
     for s2_index, sublist_2 in enumerate(current_tour):
         if sublist_2[0] == j_to:
@@ -292,7 +304,8 @@ def added_path_merge_on_i_from(s_index):
 
 
 def added_path_merge_on_j_to(s_index):
-    global current_tour, i_from
+    global i_from
+    global current_tour
 
     for s2_index, sublist_2 in enumerate(current_tour):
         if sublist_2[-1] == i_from:
@@ -303,7 +316,8 @@ def added_path_merge_on_j_to(s_index):
 
 
 def add_path_already_have_i_from(s_index, sublist):
-    global current_tour, j_to
+    global j_to
+    global current_tour
 
     if sublist[0] == j_to:
         return False
@@ -317,7 +331,8 @@ def add_path_already_have_i_from(s_index, sublist):
 
 
 def add_path_already_have_j_to(s_index, sublist):
-    global current_tour, i_from
+    global i_from
+    global current_tour
 
     if sublist[-1] == i_from:
         return False
@@ -331,7 +346,8 @@ def add_path_already_have_j_to(s_index, sublist):
 
 
 def try_add_this_path():
-    global current_tour, i_from, j_to
+    global i_from, j_to
+    global current_tour
 
     for s_index, sublist in enumerate(current_tour):
         if i_from == sublist[-1]:
@@ -361,6 +377,8 @@ def add_path(possible_paths):
 # ==============================================================
 
 def debug_block_1():
+    global C
+
     debug_block_name(1)
     block_1()
     debug('Input (distance matrix):\n')
@@ -368,6 +386,9 @@ def debug_block_1():
 
 
 def debug_block_2():
+    global C_prime
+    global X
+
     debug_block_name(2)
     block_2()
     debug(f'Bound(Root) = {X.bound}\n')
@@ -375,6 +396,9 @@ def debug_block_2():
 
 
 def debug_block_3():
+    global i_from, j_to, max_Dij
+    global Y, Y_bar
+
     debug_block_name(3)
     block_3()
     debug(f'Child vertices: '
@@ -385,12 +409,18 @@ def debug_block_3():
 
 
 def debug_block_4():
+    global i_from, j_to
+    global Y_bar
+
     debug_block_name(4)
     block_4()
     debug(f'Bound("({-i_from},{-j_to})") = {Y_bar.bound}\n')
 
 
 def debug_block_5():
+    global C_prime, i_from, j_to
+    global Y
+
     debug_block_name(5)
     block_5()
     debug(f'Bound("({i_from},{j_to})") = {Y.bound}\n')
@@ -398,17 +428,24 @@ def debug_block_5():
 
 
 def debug_block_6():
+    global C_prime
+
     debug_block_name(6)
-    is_matrix_simple = block_6()
+    is_matrix_2x2 = block_6()
     size = len(C_prime)
-    if is_matrix_simple:
+
+    if is_matrix_2x2:
         debug(f'Matrix is simple enough (size = {size}x{size})\n')
     else:
         debug(f'Matrix is not simple enough (size = {size}x{size})\n')
-    return is_matrix_simple
+
+    return is_matrix_2x2
 
 
 def debug_block_7():
+    global Y
+    global current_tour
+
     debug_block_name(7)
     block_7()
     debug(f'Current tour: {current_tour}')
@@ -416,6 +453,8 @@ def debug_block_7():
 
 
 def debug_block_8():
+    global best_tour, best_cost
+
     debug_block_name(8)
     old_best_cost = best_cost
 
@@ -429,6 +468,8 @@ def debug_block_8():
 
 
 def debug_block_9():
+    global X
+
     debug_block_name(9)
     block_9()
     i, j = X.path[0], X.path[1]
@@ -437,6 +478,9 @@ def debug_block_9():
 
 
 def debug_block_10():
+    global X
+    global best_tour, best_cost
+
     debug_block_name(10)
     is_no_better_path = block_10()
 
@@ -457,10 +501,13 @@ def debug_block_10():
 
 
 def debug_block_11():
-    debug_block_name(11)
-    is_the_same = block_11()
+    global C_prime
+    global X
 
-    if is_the_same:
+    debug_block_name(11)
+    is_vertex_the_same = block_11()
+
+    if is_vertex_the_same:
         debug('Same vertex has been picked as it was before,'
               ' the matrix C_prime does not change.\n')
         debug_M('C_prime', C_prime)
@@ -486,6 +533,7 @@ def debug_block_11():
 
 def block_1():
     global C
+
     # convert 0s to None, meaning INF
     C_tmp = []
     for row in C:
@@ -500,7 +548,8 @@ def block_1():
 # --------------------------------------------------
 
 def block_2():
-    global X, C, C_prime, row_map, col_map
+    global C, C_prime, row_map, col_map
+    global X
 
     reset_C_prime()
     C_prime, bound_root = simplify(C_prime)
@@ -513,7 +562,9 @@ def block_2():
 # --------------------------------------------------
 
 def block_3():
-    global Y, Y_bar, C_prime, i_from, j_to, max_Dij, current_tour
+    global C_prime, i_from, j_to, max_Dij
+    global X, Y, Y_bar
+    global current_tour
 
     # reset these variables
     i_from = None
@@ -557,7 +608,10 @@ def block_3():
 # --------------------------------------------------
 
 def block_4():
-    global max_Dij, candidate_nodes
+    global max_Dij
+    global X, Y_bar
+    global candidate_nodes
+
     Y_bar.bound = X.bound + max_Dij
     # we always check Y first, so let's save
     # Y_bar for later
@@ -570,7 +624,8 @@ def block_4():
 # --------------------------------------------------
 
 def block_5():
-    global X, Y, C_prime
+    global C_prime, i_from, j_to
+    global X, Y
 
     delete_row_col(i_from, j_to)
     disable_path(j_to, i_from)
@@ -598,7 +653,9 @@ def block_6():
 # --------------------------------------------------
 
 def block_7():
-    global C, current_tour
+    global C, row_map, col_map
+    global Y
+    global current_tour
 
     cost = 0
 
@@ -647,7 +704,9 @@ def block_7():
 # --------------------------------------------------
 
 def block_8():
-    global best_cost, current_tour, best_tour
+    global Y
+    global current_tour, best_tour, best_cost
+
     cost = Y.bound
     if best_cost is None or cost < best_cost:
         best_cost = cost
@@ -659,7 +718,9 @@ def block_8():
 # --------------------------------------------------
 
 def block_9():
-    global X, Y, C_prime, candidate_nodes
+    global C_prime
+    global X, Y
+    global candidate_nodes
 
     X = Y
 
@@ -676,7 +737,9 @@ def block_9():
 # --------------------------------------------------
 
 def block_10():
+    global X
     global best_cost
+
     if best_cost is not None and best_cost <= X.bound:
         return True
     else:
@@ -688,7 +751,9 @@ def block_10():
 # --------------------------------------------------
 
 def block_11():
-    global C, C_prime, current_tour
+    global C, C_prime, row_map, col_map, i_from, j_to
+    global X, Y
+    global current_tour
 
     # Is the next chosen vertex X the same as
     # the curent vertex Y?
@@ -753,6 +818,14 @@ def block_11():
 # Main program: code
 # ==============================================================
 if __name__ == '__main__':
+    # --------------------------------------------------
+    # Initialize global variables (part 1/2)
+    # --------------------------------------------------
+
+    DEBUG = False
+    C = []
+    names = {}
+
     # --------------------------------------------------
     # Parse arguments
     # --------------------------------------------------
@@ -848,9 +921,6 @@ if __name__ == '__main__':
     if args.output_file:
         sys.stdout = open(args.output_file, 'a')
 
-    C = []
-    names = {}
-
     if not args.input_file:
         if args.random_seed:
             random.seed(args.random_seed)
@@ -931,12 +1001,17 @@ if __name__ == '__main__':
                 lines = lines[matrix_size:]
 
     # --------------------------------------------------
-    # Set up variables
+    # Initialize global variables (part 2/2)
     # --------------------------------------------------
+
+    # DEBUG - already initialized in (part 1/2)
+    #         and then defined by -d flag
 
     # -----------------------------
     # Matrix related
     # -----------------------------
+    # C - already initialized in (part 1/2) and then defined
+    #     either from input file or by randomly generating it
     C_prime = None
 
     row_map = []
@@ -960,6 +1035,8 @@ if __name__ == '__main__':
     current_tour = []
     best_tour = []
     best_cost = None
+    # names - already initialized in (part 1/2) and then
+    #         either defined from input file or left empty
 
     # -----------------------------
     # Iteration counter
@@ -1002,7 +1079,7 @@ if __name__ == '__main__':
         print(f'--- {end_time - start_time} seconds ---')
 
     # --------------------------------------------------
-    # Main loop (normal mode)
+    # Main loop (standard mode)
     # --------------------------------------------------
     else:
         start_time = time.time()
