@@ -771,41 +771,34 @@ def block_11():
 
     # traversing the tree
     node = X
+    cost_included_paths = 0
     included_paths = []
-    excluded_paths = []
 
     while node.parent is not None:
-        is_bar_vertex = node.path[0] < 0
 
-        if is_bar_vertex:
-            excluded_paths.append(node.path)
+        i_from = node.path[0]
+        j_to = node.path[1]
+
+        if i_from < 0 and j_to < 0:
+            C_prime[row_map.index(-i_from)][col_map.index(-j_to)] = None
         else:
+            if not current_tour:
+                current_tour.append([i_from, j_to])
+            else:
+                path_added = add_path([[node.path[0], node.path[1]]])
+                if not path_added:
+                    raise Exception(
+                        f'Something went wrong, no path was added\n')
+
+            cost_included_paths += C[ind(i_from)][ind(j_to)]
+
             included_paths.append(node.path)
 
         node = node.parent
 
-    for path in excluded_paths:
-        i_from = -path[0]
-        j_to = -path[1]
-        C_prime[row_map.index(i_from)][col_map.index(j_to)] = None
-
-    cost_included_paths = 0
-
     for path in included_paths:
-
         i_from = path[0]
         j_to = path[1]
-
-        if not current_tour:
-            current_tour.append([i_from, j_to])
-        else:
-
-            path_added = add_path([[path[0], path[1]]])
-            if not path_added:
-                raise Exception(
-                    f'Something went wrong, no path was added\n')
-
-        cost_included_paths += C[ind(i_from)][ind(j_to)]
 
         delete_row_col(i_from, j_to)
         disable_path(j_to, i_from)
@@ -1117,7 +1110,7 @@ if __name__ == '__main__':
         end_time = time.time()
 
         if args.silent:
-            print('%s' % (end_time - start_time))
+            print(end_time - start_time)
         else:
             check_tour(best_tour)
             print_solution()
