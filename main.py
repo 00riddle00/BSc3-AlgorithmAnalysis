@@ -54,19 +54,19 @@ def check_tour(tour, check_len=True, flatten=False):
 
     if flatten:
         tour = [city for sublist in tour for city in sublist]
-
-    assert len(tour) == len(set(tour)), \
-        'There are repeated vertices in the current tour'
     if check_len:
         assert len(tour) == len(C), \
             'The tour is shorter than the number of cities'
+
+    assert len(tour) == len(set(tour)), \
+        'There are repeated vertices in the current tour'
 
 
 # ==============================================================
 # Utility classes
 # ==============================================================
 
-# Node of the binary tree
+# Binary tree node
 class Node:
 
     def __init__(self, parent, path, bound=None):
@@ -77,6 +77,7 @@ class Node:
         self.bound = bound
 
 
+# Priority queue
 class CandidateNodes:
     nodelist = []
     size = 0
@@ -95,8 +96,10 @@ class CandidateNodes:
         return self.nodelist[0]
 
     def pop(self):
+        node = self.nodelist[0]
         self.nodelist = self.nodelist[1:]
         self.size -= 1
+        return node
 
 
 # ==============================================================
@@ -582,12 +585,6 @@ def block_3():
     else:
         while not add_path(possible_paths):
             C_prime[row_map.index(i_from)][col_map.index(j_to)] = None
-
-            # reset these global variables
-            i_from = None
-            j_to = None
-            max_Dij = None
-
             possible_paths, max_Dij = find_max_Dij(C_prime)
 
             i_from = possible_paths[0][0]
@@ -724,10 +721,8 @@ def block_9():
 
     X = Y
 
-    candidate_node = candidate_nodes.get()
-    if Y.bound > candidate_node.bound:
-        candidate_nodes.pop()
-        X = candidate_node
+    if Y.bound > candidate_nodes.get().bound:
+        X = candidate_nodes.pop()
         if len(C_prime) > 2:
             candidate_nodes.add(Y)
 
