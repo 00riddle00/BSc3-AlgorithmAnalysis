@@ -738,9 +738,12 @@ def block_9():
 
 def block_10():
     global X
-    global best_cost
+    global best_tour, best_cost
 
     if best_cost is not None and best_cost <= X.bound:
+        # make the tour start from city no. 1
+        index_of_1 = best_tour.index(1)
+        best_tour = best_tour[index_of_1:] + best_tour[:index_of_1]
         return True
     else:
         return False
@@ -918,6 +921,11 @@ if __name__ == '__main__':
                 print("main.py: error: argument -w/--weights:"
                       " incorrect weights interval")
                 sys.exit()
+
+    if args.debug and args.silent:
+        print("main.py: error: argument -s/--silent: "
+              "can not be used with debug mode")
+        sys.exit()
 
     if args.output_file:
         sys.stdout = open(args.output_file, 'a')
