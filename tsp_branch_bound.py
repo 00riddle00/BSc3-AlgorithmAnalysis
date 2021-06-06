@@ -1122,4 +1122,4 @@ if __name__ == '__main__':
             print_solution()
             print(f'--------- {iterations} iterations -----------')
             print(f'--- {end_time - start_time} seconds ---')
-            print(150 * '-')
+            print(60 * '-')
