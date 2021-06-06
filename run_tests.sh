@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-for i in {01..10};
+for i in {01..11};
 do
     ./tsp_branch_bound.py "tests/inputs/input_test_$i"
     #if [ $? -ne 0 ]; then exit $?; fi
