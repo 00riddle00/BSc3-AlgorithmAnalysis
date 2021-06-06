@@ -2,8 +2,8 @@
 
 for i in {01..11};
 do
-    ./tsp_branch_bound.py "tests/inputs/input_test_$i" -d
-    #if [ $? -ne 0 ]; then exit $?; fi
+    ./tsp_branch_bound.py "tests/inputs/input_test_$i"
+    if [ $? -ne 0 ]; then exit $?; fi
 done
 
 for ((i=3;i<=200;i++)); 
