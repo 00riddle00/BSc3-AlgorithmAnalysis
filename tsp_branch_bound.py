@@ -239,6 +239,19 @@ def print_solution():
 # --------------------------------------------------
 
 # -----------------------------
+# Generate new matrix
+# -----------------------------
+def generate_new_matrix(cities, weights):
+    M = []
+    for i in range(cities):
+        row = [random.randrange(weights[0], weights[1] + 1) for _ in range(cities)]
+        row[i] = 0
+        M.append(row)
+
+    return M
+
+
+# -----------------------------
 # For matrix operations
 # -----------------------------
 def reset_C_prime():
@@ -830,11 +843,11 @@ if __name__ == '__main__':
                     '(TSP) using branch and bound algorithm ###',
         usage='\n    tsp_branch_bound.py input_file [-o OUTPUT_FILE] [-d/-s]\n'
               '\nusage for randomized input:'
-              '\n    tsp_branch_bound.py -c CITIES [-w MIN MAX] '
+              '\n    tsp_branch_bound.py -c CITIES [-a ARCS] [-w MIN MAX] '
               '[-r RANDOM_SEED] [-o OUTPUT_FILE] [-d/-s]\n'
               '\nusage for executing many test runs:'
-              '\n    tsp_branch_bound.py -c CITIES [-w MIN MAX] '
-              '[-r RANDOM_SEED] [-o OUTPUT_FILE] [-t NUMBER_OF_TEST_RUNS] [-s]\n'
+              '\n    tsp_branch_bound.py -c CITIES [-a ARCS] [-w MIN MAX] '
+              '[-r RANDOM_SEED] [-o OUTPUT_FILE] [-t TEST_RUNS] [-s]\n'
               '\nTry tsp_branch_bound.py --help for more information.')
 
     parser.add_argument('-d', '--debug',
@@ -850,6 +863,13 @@ if __name__ == '__main__':
                         type=int,
                         help='[randomize input]: number of cities '
                              '(vertices). Minimum value is 3')
+
+    parser.add_argument('-a', '--arcs',
+                        type=int,
+                        help='[randomize input]: number of arcs (paths). '
+                             'Minimum value is c, maximum - c*(c-1), where c '
+                             'is the specified number of cities (vertices). '
+                             'Default value is the maximum: c*(c-1)')
 
     parser.add_argument('-w', '--weights',
                         nargs=2,
@@ -867,16 +887,16 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output_file',
                         help='a file to write output to')
 
-    parser.add_argument('-s', '--silent',
-                        action='store_true',
-                        help='set non-verbose output '
-                             '(prints only time passed in seconds)')
-
     parser.add_argument('-t', '--test_runs',
                         type=int,
                         help='execute the indicated amount of test runs. '
                              'The solution will not be printed, average times'
                              'and number of iterations will be shown instead')
+
+    parser.add_argument('-s', '--silent',
+                        action='store_true',
+                        help='set non-verbose output '
+                             '(prints only time passed in seconds)')
 
     args = parser.parse_args()
 
@@ -904,6 +924,9 @@ if __name__ == '__main__':
         elif args.test_runs:
             print("tsp_branch_bound.py: error: argument -t/--test_runs: "
                   "can not be used when input file is specified")
+        elif args.arcs:
+            print("tsp_branch_bound.py: error: argument -a/--arcs: "
+                  "can not be used when input file is specified")
             sys.exit()
     else:
         if not args.cities:
@@ -918,6 +941,7 @@ if __name__ == '__main__':
             print("tsp_branch_bound.py: error: argument -c/--cities: "
                   "the minimum number is 3")
             sys.exit()
+
         if args.weights:
             if args.weights[0] < 1 or args.weights[1] < 1:
                 print("tsp_branch_bound.py: error: argument -w/--weights:"
@@ -926,6 +950,13 @@ if __name__ == '__main__':
             elif args.weights[1] < args.weights[0]:
                 print("tsp_branch_bound.py: error: argument -w/--weights:"
                       " incorrect weights interval")
+                sys.exit()
+
+        if args.arcs:
+            if args.arcs < args.cities or args.arcs > (args.cities * (args.cities - 1)):
+                print(f"tsp_branch_bound.py: error: argument -a/--arcs: "
+                      f"Minimum value: {args.cities}, maximum: {args.cities * (args.cities - 1)}. "
+                      f"These values depend on the specified number of cities")
                 sys.exit()
 
     if args.debug:
@@ -941,11 +972,12 @@ if __name__ == '__main__':
     if args.output_file:
         sys.stdout = open(args.output_file, 'a')
 
+    random_seed = 1
+
     if not args.input_file:
         if args.random_seed:
-            random.seed(args.random_seed)
-        else:
-            random.seed(0)
+            random_seed = args.random_seed
+        random.seed(random_seed)
 
         cities = args.cities
         w_1 = 1
@@ -954,10 +986,9 @@ if __name__ == '__main__':
             w_1 = args.weights[0]
             w_n = args.weights[1]
 
-        for i in range(cities):
-            row = [random.randrange(w_1, w_n + 1) for _ in range(cities)]
-            row[i] = 0
-            C.append(row)
+        weights = [w_1, w_n]
+        C = generate_new_matrix(cities, weights)
+
     else:
         # --------------------------------------------------
         # Read input file
@@ -1151,9 +1182,9 @@ if __name__ == '__main__':
     else:
         total_time = 0
         total_time_per_iteration = 0
-        iterations_per_run = 0
+        total_iterations = 0
 
-        for test_run in range(args.test_runs):
+        for test_run in range(1, args.test_runs + 1):
 
             start_time = time.time()
 
@@ -1187,11 +1218,17 @@ if __name__ == '__main__':
             time_taken = end_time - start_time
             time_per_iteration = time_taken / iterations
 
-            if test_run == 0:
-                iterations_per_run = iterations
-
             total_time += time_taken
             total_time_per_iteration += time_per_iteration
+            total_iterations += iterations
+
+            # --------------------------------------------------
+            # Create new input matrix with different
+            # random seed for each new test run
+            # --------------------------------------------------
+
+            random.seed(random_seed + test_run)
+            C = generate_new_matrix(args.cities, args.weights)
 
             # --------------------------------------------------
             # Reinitialize global variables
@@ -1216,15 +1253,23 @@ if __name__ == '__main__':
 
             iterations = 0
 
-        avg_total_time = total_time / args.test_runs
-        avg_total_time_per_iteration = total_time_per_iteration / args.test_runs
+        avg_time = total_time / args.test_runs
+        avg_time_per_iteration = total_time_per_iteration / args.test_runs
+        avg_iterations = total_iterations / args.test_runs
 
         if args.silent:
-            print(f'{avg_total_time}, {avg_total_time_per_iteration}, {iterations_per_run}')
+            print(f'{avg_time}, {avg_time_per_iteration}, {avg_iterations}')
         else:
             print('-------------------------------------------------')
-            print(f'Total time (avg): {avg_total_time}s\n'
-                  f'Time per iteration (avg): {avg_total_time_per_iteration}s\n'
-                  f'Iterations in one test run: {iterations_per_run}\n'
-                  f'Total number of test runs: {args.test_runs}')
+            print(f'Vertices (cities): {args.cities}\n'
+                  # todo change to user specified
+                  f'Arcs (paths): {args.cities * (args.cities - 1)}\n'
+                  f'Possible smallest path length (w_1): {w_1}\n'
+                  f'Possible largest path length (w_n): {w_n}\n')
+            print(f'Total time (avg): {avg_time}s\n'
+                  f'Time per iteration (avg): {avg_time_per_iteration}s\n'
+                  f'Iterations in one test run (avg): {avg_iterations}\n'
+                  f'Total number of test runs: {args.test_runs}\n'
+                  f'Random seeds of the test runs (interval): '
+                  f'{args.random_seed}-{args.random_seed + args.test_runs - 1}')
             print('-------------------------------------------------')
