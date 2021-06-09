@@ -17,7 +17,7 @@ done
 echo
 
 # part 2
-for ((i=100;i<=1000;i=i+100)); 
+for ((i=200;i<=1000;i=i+100)); 
 do
     ./tsp_branch_bound.py -c $c -w 1 $i -r 1 -t 10 -s
     if [ $? -ne 0 ]; then exit $?; fi
@@ -26,7 +26,7 @@ done
 echo
 
 # part 3
-for ((i=1000;i<=100000;i=i+1000)); 
+for ((i=2000;i<=100000;i=i+1000)); 
 do
     ./tsp_branch_bound.py -c $c -w 1 $i -r 1 -t 10 -s
     if [ $? -ne 0 ]; then exit $?; fi
@@ -35,7 +35,7 @@ done
 echo
 
 # part 4
-for ((i=100000;i<=10000000;i=i+100000)); 
+for ((i=200000;i<=10000000;i=i+100000)); 
 do
     ./tsp_branch_bound.py -c $c -w 1 $i -r 1 -t 10 -s
     if [ $? -ne 0 ]; then exit $?; fi
