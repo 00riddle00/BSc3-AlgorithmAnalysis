@@ -241,12 +241,46 @@ def print_solution():
 # -----------------------------
 # Generate new matrix
 # -----------------------------
-def generate_new_matrix(cities, weights):
+def generate_new_matrix(cities, weights, arcs=None):
     M = []
-    for i in range(cities):
-        row = [random.randrange(weights[0], weights[1] + 1) for _ in range(cities)]
-        row[i] = 0
+    rows = cities
+    cols = cities
+
+    for i in range(rows):
+        row = [random.randrange(weights[0], weights[1] + 1) for _ in range(cols)]
+        row[i] = 0  # main diagonal element
         M.append(row)
+
+    if arcs:
+        max_arcs_no = rows * (rows - 1)
+
+        non_removable_arcs = []
+        col_numbers = [j for j in range(cols)]
+        for i in range(rows):
+            col_numbers_except_main_diagonal = [(col_numbers_index, j) for col_numbers_index, j in
+                                                enumerate(col_numbers) if j != i]
+            tmp = col_numbers_except_main_diagonal[random.choice(range(len(col_numbers_except_main_diagonal)))]
+            col_numbers_index = tmp[0]
+            j = tmp[1]
+            non_removable_arcs.append([i, j])
+            col_numbers = col_numbers[:col_numbers_index] + col_numbers[col_numbers_index + 1:]
+
+        removable_arcs = []
+
+        for i in range(rows):
+            for j in range(cols):
+                if i != j and [i, j] not in non_removable_arcs:
+                    removable_arcs.append([i, j])
+
+        removed_arcs_no = max_arcs_no - arcs
+
+        for _ in range(removed_arcs_no):
+            removed_arc_index = random.choice(range(len(removable_arcs)))
+            i_j = removable_arcs[removed_arc_index]
+            i = i_j[0]
+            j = i_j[1]
+            M[i][j] = 0
+            removable_arcs = removable_arcs[:removed_arc_index] + removable_arcs[removed_arc_index + 1:]
 
     return M
 
@@ -987,7 +1021,7 @@ if __name__ == '__main__':
             w_n = args.weights[1]
 
         weights = [w_1, w_n]
-        C = generate_new_matrix(cities, weights)
+        C = generate_new_matrix(cities, weights, args.arcs)
 
     else:
         # --------------------------------------------------
@@ -1228,7 +1262,7 @@ if __name__ == '__main__':
             # --------------------------------------------------
 
             random.seed(random_seed + test_run)
-            C = generate_new_matrix(args.cities, args.weights)
+            C = generate_new_matrix(args.cities, weights, args.arcs)
 
             # --------------------------------------------------
             # Reinitialize global variables
