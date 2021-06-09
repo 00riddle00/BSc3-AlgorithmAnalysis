@@ -79,8 +79,10 @@ class Node:
 
 # Priority queue
 class CandidateNodes:
-    nodelist = []
-    size = 0
+
+    def __init__(self):
+        self.nodelist = []
+        self.size = 0
 
     def add(self, node):
         for i in range(self.size):
@@ -830,6 +832,9 @@ if __name__ == '__main__':
               '\nusage for randomized input:'
               '\n    tsp_branch_bound.py -c CITIES [-w MIN MAX] '
               '[-r RANDOM_SEED] [-o OUTPUT_FILE] [-d/-s]\n'
+              '\nusage for executing many test runs:'
+              '\n    tsp_branch_bound.py -c CITIES [-w MIN MAX] '
+              '[-r RANDOM_SEED] [-o OUTPUT_FILE] [-t NUMBER_OF_TEST_RUNS] [-s]\n'
               '\nTry tsp_branch_bound.py --help for more information.')
 
     parser.add_argument('-d', '--debug',
@@ -867,6 +872,12 @@ if __name__ == '__main__':
                         help='set non-verbose output '
                              '(prints only time passed in seconds)')
 
+    parser.add_argument('-t', '--test_runs',
+                        type=int,
+                        help='execute the indicated amount of test runs. '
+                             'The solution will not be printed, average times'
+                             'and number of iterations will be shown instead')
+
     args = parser.parse_args()
 
     DEBUG = args.debug
@@ -889,6 +900,9 @@ if __name__ == '__main__':
             sys.exit()
         elif args.random_seed:
             print("tsp_branch_bound.py: error: argument -r/--random_seed: "
+                  "can not be used when input file is specified")
+        elif args.test_runs:
+            print("tsp_branch_bound.py: error: argument -t/--test_runs: "
                   "can not be used when input file is specified")
             sys.exit()
     else:
@@ -914,10 +928,15 @@ if __name__ == '__main__':
                       " incorrect weights interval")
                 sys.exit()
 
-    if args.debug and args.silent:
-        print("tsp_branch_bound.py: error: argument -s/--silent: "
-              "can not be used with debug mode")
-        sys.exit()
+    if args.debug:
+        if args.silent:
+            print("tsp_branch_bound.py: error: argument -s/--silent: "
+                  "can not be used with debug mode")
+            sys.exit()
+        elif args.test_runs:
+            print("tsp_branch_bound.py: error: argument -t/--test_runs: "
+                  "can not be used with debug mode")
+            sys.exit()
 
     if args.output_file:
         sys.stdout = open(args.output_file, 'a')
@@ -1042,7 +1061,7 @@ if __name__ == '__main__':
     # -----------------------------
     # Iteration counter
     # -----------------------------
-    iterations = 1
+    iterations = 0
 
     # --------------------------------------------------
     # Main loop (DEBUG mode)
@@ -1055,6 +1074,7 @@ if __name__ == '__main__':
         debug_block_2()
 
         while True:
+            iterations += 1
             if not debug_block_3():
                 Y = candidate_nodes.pop()
                 X = candidate_nodes.pop()
@@ -1075,8 +1095,6 @@ if __name__ == '__main__':
             else:
                 break
 
-            iterations += 1
-
         end_time = time.time()
 
         check_tour(best_tour)
@@ -1088,13 +1106,14 @@ if __name__ == '__main__':
     # --------------------------------------------------
     # Main loop (standard mode)
     # --------------------------------------------------
-    else:
+    elif not args.test_runs:
         start_time = time.time()
 
         block_1()
         block_2()
 
         while True:
+            iterations += 1
             if not block_3():
                 Y = candidate_nodes.pop()
                 X = candidate_nodes.pop()
@@ -1115,8 +1134,6 @@ if __name__ == '__main__':
             else:
                 break
 
-            iterations += 1
-
         end_time = time.time()
 
         if args.silent:
@@ -1127,3 +1144,87 @@ if __name__ == '__main__':
             print(f'--------- {iterations} iterations -----------')
             print(f'--- {end_time - start_time} seconds ---')
             print(60 * '-')
+
+    # --------------------------------------------------
+    # Main loop (testing mode)
+    # --------------------------------------------------
+    else:
+        total_time = 0
+        total_time_per_iteration = 0
+        iterations_per_run = 0
+
+        for test_run in range(args.test_runs):
+
+            start_time = time.time()
+
+            block_1()
+            block_2()
+
+            while True:
+                iterations += 1
+                if not block_3():
+                    Y = candidate_nodes.pop()
+                    X = candidate_nodes.pop()
+                    block_11()
+                    continue
+
+                block_4()
+                block_5()
+
+                if block_6():
+                    block_7()
+                    block_8()
+
+                block_9()
+
+                if not block_10():
+                    block_11()
+                else:
+                    break
+
+            end_time = time.time()
+
+            time_taken = end_time - start_time
+            time_per_iteration = time_taken / iterations
+
+            if test_run == 0:
+                iterations_per_run = iterations
+
+            total_time += time_taken
+            total_time_per_iteration += time_per_iteration
+
+            # --------------------------------------------------
+            # Reinitialize global variables
+            # --------------------------------------------------
+            C_prime = None
+
+            row_map = []
+            col_map = []
+
+            i_from = None
+            j_to = None
+            max_Dij = None
+
+            X = None
+            Y = None
+            Y_bar = None
+            candidate_nodes = CandidateNodes()
+
+            current_tour = []
+            best_tour = []
+            best_cost = None
+
+            iterations = 0
+
+        avg_total_time = total_time / args.test_runs
+        avg_total_time_per_iteration = total_time_per_iteration / args.test_runs
+
+        if args.silent:
+            print(f'{avg_total_time}, {avg_total_time_per_iteration}, {iterations_per_run}')
+        else:
+            print('-------------------------------------------------')
+            print(f'Total time (avg): {avg_total_time}s\n'
+                  f'Time per iteration (avg): {avg_total_time_per_iteration}s\n'
+                  f'Iterations in one test run: {iterations_per_run}\n'
+                  f'Total number of test runs: {args.test_runs}')
+            print('-------------------------------------------------')
